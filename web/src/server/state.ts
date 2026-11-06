@@ -89,7 +89,24 @@ export function readState(): Promise<State> {
   return value;
 }
 
-export async function readQuote(fund: Address, amount: bigint): Promise<Quote> {
+const quoteCache = new Map<string, { at: number; value: Promise<Quote> }>();
+const MAX_AMOUNT = 10n ** 30n; // a trillion fund units at 18 decimals
+
+/// The Vault's quote, cached ten seconds per (fund, amount). Only listed funds
+/// reach the RPC, and amounts are clamped.
+export function readQuote(fund: Address, amount: bigint): Promise<Quote> {
+  if (amount <= 0n || amount > MAX_AMOUNT) return Promise.reject(new Error("Amount out of range"));
+  const key = `${fund.toLowerCase()}:${amount}`;
+  const hit = quoteCache.get(key);
+  if (hit && Date.now() - hit.at < TTL_MS) return hit.value;
+  const value = quoteUncached(fund, amount);
+  if (quoteCache.size > 500) quoteCache.clear();
+  quoteCache.set(key, { at: Date.now(), value });
+  value.catch(() => quoteCache.delete(key));
+  return value;
+}
+
+async function quoteUncached(fund: Address, amount: bigint): Promise<Quote> {
   const { funds } = await readState();
   const t = funds.find((f) => f.address.toLowerCase() === fund.toLowerCase());
   if (!t) throw new Error("Fund not listed");
@@ -111,7 +128,12 @@ export async function readQuote(fund: Address, amount: bigint): Promise<Quote> {
   };
 }
 
-/// Drop the cache after a write so the next read shows it.
-export function invalidateState() {
+/// Drop the cache after a write so the next read shows it. Callable from a
+/// public route, so it takes effect at most once every five seconds.
+let lastInvalidated = 0;
+export function invalidateState(): boolean {
+  if (Date.now() - lastInvalidated < 5_000) return false;
+  lastInvalidated = Date.now();
   cached = null;
+  return true;
 }
