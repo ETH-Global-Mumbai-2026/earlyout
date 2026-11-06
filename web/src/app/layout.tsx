@@ -1,10 +1,21 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+const averta = localFont({
+  src: [
+    { path: "./fonts/averta-light.woff2", weight: "300", style: "normal" },
+    { path: "./fonts/averta-regular.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/averta-semibold.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/averta-semibold.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/averta-bold.woff2", weight: "700", style: "normal" },
+  ],
+  variable: "--font-averta",
+  display: "swap",
+  fallback: ["-apple-system", "BlinkMacSystemFont", "Helvetica Neue", "Segoe UI", "Roboto", "Arial", "sans-serif"],
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -38,7 +49,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={averta.variable}>
       <body>
         <Providers>{children}</Providers>
       </body>
