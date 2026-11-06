@@ -1,5 +1,7 @@
 import { CTA, Container, DataRows, Grid, Section, Tile } from "@/components/site/blocks";
-import { LiveHeroPanel } from "@/components/site/LiveCaption";
+import { HeroVisual } from "@/components/site/LiveCaption";
+import { SpreadBar } from "@/components/viz/SpreadBar";
+import { SpreadCurve } from "@/components/viz/SpreadCurve";
 import { REPO } from "@/components/site/links";
 
 export default function Landing() {
@@ -31,7 +33,7 @@ export default function Landing() {
             ]}
           />
         </div>
-        <LiveHeroPanel className="h-[46vh] border-t border-hairline lg:h-auto lg:border-l lg:border-t-0" />
+        <HeroVisual className="min-h-[560px] border-t border-hairline lg:min-h-0 lg:border-l lg:border-t-0" />
       </section>
 
       <Section
@@ -81,7 +83,7 @@ export default function Landing() {
             ["HALT", "bg-halt", "The issuer reports failure, the NAV is stale, or the fund is written down."],
           ].map(([v, dot, text]) => (
             <div key={v} className="card p-6">
-              <div className="flex items-center gap-2 font-mono text-sm">
+              <div className="flex items-center gap-2 text-sm font-semibold tracking-wide">
                 <span className={`size-2 rounded-full ${dot}`} />
                 {v}
               </div>
@@ -96,8 +98,12 @@ export default function Landing() {
         title="A price that explains itself."
         lede="Spread = base + vault usage + volatility × √(time to payout) + issuer credit. A 90-day ACRED claim today:"
       >
-        <div className="card max-w-2xl p-6">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+        <div className="card p-6">
+          <div className="t-eyebrow">Where the 5.97% goes</div>
+          <SpreadBar className="mt-4" bps={[50, 0, 397, 150]} />
           <DataRows
+            className="mt-5"
             rows={[
               ["Base", "0.50%", "cost of running the vault"],
               ["Vault usage", "0.00%", "rises as USDC is deployed"],
@@ -106,6 +112,12 @@ export default function Landing() {
               [<strong key="t" className="text-ink">Spread</strong>, <strong key="v">5.97%</strong>, "seller keeps 94.03% of NAV"],
             ]}
           />
+        </div>
+        <div className="card p-6">
+          <div className="t-eyebrow">Spread by time to payout</div>
+          <p className="t-caption mt-1">Waiting is the main cost. It grows with the square root of time, so the first weeks cost the most per day.</p>
+          <SpreadCurve className="mt-4" baseBps={50} utilBps={0} creditBps={150} volBps={800} marks={[{ days: 90, label: "ACRED 90 days" }, { days: 0.0104, label: "Demo 15 min" }]} />
+        </div>
         </div>
       </Section>
 
