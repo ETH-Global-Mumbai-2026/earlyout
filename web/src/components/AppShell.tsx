@@ -11,7 +11,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="theme-app">
       <Toolbar />
       <RiskStrip />
-      <main className="mx-auto w-full max-w-[1320px] px-4 pb-28 pt-8 sm:px-6 sm:pb-14">
+      <main className="mx-auto w-full max-w-[1240px] px-4 pb-28 pt-10 sm:px-6 sm:pb-16">
         <ConfigNotice />
         {children}
       </main>

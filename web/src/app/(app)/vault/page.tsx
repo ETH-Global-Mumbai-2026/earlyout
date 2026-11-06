@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 import { AmountInput } from "@/components/AmountInput";
 import { Button, Notice, Panel, Segmented, Spinner } from "@/components/ui/primitives";
 import { Allocation } from "@/components/viz/Allocation";
+import { Meter } from "@/components/viz/Meter";
+import { Ring } from "@/components/viz/Ring";
+import { isScheduled } from "@/lib/glossary";
 import { AppHeader } from "@/components/AppHeader";
 import { errorMessage, useAccountState, useDeposit, useFunds, useVault, useWallet, useWithdraw } from "@/hooks/useEarlyout";
 import { useBook } from "@/hooks/useBook";
@@ -118,23 +121,23 @@ export default function VaultPage() {
             </div>
           </Panel>
           {v && funds.data && (
-            <Panel title="Allocation and exposure" bodyClassName="grid gap-5 p-4">
-              <Allocation idle={v.idle} deployed={v.deployed} />
-              <div className="grid gap-2.5">
-                {funds.data.map((f) => {
-                  const pct = f.capUsdc > 0n ? Math.min(100, Number((f.deployedUsdc * 10000n) / f.capUsdc) / 100) : 0;
-                  return (
-                    <div key={f.address} className="grid grid-cols-[5.5rem_1fr_auto] items-center gap-3 text-[13px]">
-                      <span className="font-medium">{f.symbol}</span>
-                      <div className="h-1.5 rounded-full bg-viz-track" role="meter" aria-label={`${f.symbol} exposure`} aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
-                        <div className="h-1.5 rounded-full bg-accent" style={{ width: `${pct}%` }} />
-                      </div>
-                      <span className="num text-muted">
-                        {fmtUsdc(f.deployedUsdc)} of {fmtUsdc(f.capUsdc)}
-                      </span>
-                    </div>
-                  );
-                })}
+            <Panel title="Allocation and exposure" bodyClassName="grid gap-6 p-5 sm:grid-cols-[auto_1fr] sm:items-center">
+              <div className="flex items-center gap-5">
+                <Ring value={Number(v.deployed)} max={Number(v.idle + v.deployed)} size={112} stroke={13} color="var(--color-viz-3)" label={`Deployed ${util.toFixed(1)}% of the vault`}>
+                  <span>
+                    <span className="num block text-[22px] font-bold leading-none">{util.toFixed(1)}%</span>
+                    <span className="t-caption">deployed</span>
+                  </span>
+                </Ring>
+                <Allocation idle={v.idle} deployed={v.deployed} className="min-w-0" />
+              </div>
+              <div className="grid gap-4 sm:border-l sm:border-hairline sm:pl-6">
+                {funds.data
+                  .filter((f) => isScheduled(f.symbol))
+                  .map((f) => (
+                    <Meter key={f.address} value={Number(f.deployedUsdc)} max={Number(f.capUsdc)} label={`${f.symbol} exposure against its cap`} valueText={`${fmtUsdc(f.deployedUsdc)} of ${fmtUsdc(f.capUsdc)}`} />
+                  ))}
+                <p className="t-caption">The vault only buys funds that redeem on a schedule. Daily-liquidity funds are priced for comparison and never held.</p>
               </div>
             </Panel>
           )}

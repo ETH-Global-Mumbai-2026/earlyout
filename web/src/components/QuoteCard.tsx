@@ -7,6 +7,7 @@ import { fmtBps, fmtDate, fmtUsdc, timeUntil } from "@/lib/format";
 import { Spinner, Swap, VerdictPill } from "./ui/primitives";
 import { useNow } from "@/hooks/useNow";
 import { SpreadBar, TermKey } from "./viz/SpreadBar";
+import { Ring } from "./viz/Ring";
 
 const TERMS = [
   ["Base", "baseBps"],
@@ -15,75 +16,79 @@ const TERMS = [
   ["Issuer credit", "creditBps"],
 ] as const;
 
-/// The ticket's price breakdown: verdict, gross, the four terms, net, settlement facts.
+function Line({ label, children, strong }: { label: React.ReactNode; children: React.ReactNode; strong?: boolean }) {
+  return (
+    <div className="ios-row">
+      <span className={strong ? "flex-1 text-[17px] font-semibold" : "flex-1 text-[15px] text-ink-2"}>{label}</span>
+      <span className={strong ? "" : "num text-[15px] text-ink"}>{children}</span>
+    </div>
+  );
+}
+
+/// The price, as iOS rows meant to sit inside a grouped section: verdict first,
+/// then gross, the four spread terms, what you receive, and the settlement facts.
 export function QuoteCard({ quote, pending, symbol }: { quote?: Quote; pending: boolean; symbol: string }) {
   const now = useNow(10_000);
   if (!quote) {
     return (
-      <div className="flex min-h-36 items-center justify-center rounded-xl border border-hairline text-muted">
-        {pending ? <Spinner /> : <span className="t-caption">Enter an amount to see the price</span>}
+      <div className="flex min-h-32 items-center justify-center px-4 text-muted">
+        {pending ? <Spinner /> : <span className="text-[15px]">Enter an amount to see the price</span>}
       </div>
     );
   }
   const spread = bpsSum(quote);
   const minOut = (quote.payout * 995n) / 1000n;
   return (
-    <div className="grid gap-3" aria-busy={pending || undefined}>
-      <Swap k={`${quote.verdict}:${quote.reason}`}>
-        <VerdictPill verdict={quote.verdict} reason={quote.reason} />
-      </Swap>
-      <div className="overflow-hidden rounded-xl border border-hairline">
-        <div className="flex justify-between border-b border-hairline px-3 py-2">
-          <span className="text-muted">
+    <div aria-busy={pending || undefined}>
+      <div className="ios-row">
+        <Swap k={`${quote.verdict}:${quote.reason}`}>
+          <VerdictPill verdict={quote.verdict} reason={quote.reason} />
+        </Swap>
+      </div>
+      <Line
+        label={
+          <>
             Gross at <Abbr k="NAV" />
-          </span>
-          <span className="num">{fmtUsdc(quote.value, true)}</span>
-        </div>
-        <div className="border-b border-hairline px-3 py-2.5">
-          <SpreadBar thin legend={false} bps={[quote.baseBps, quote.utilBps, quote.timeBps, quote.creditBps]} />
-          <div className="mt-2.5 grid gap-1">
-            {TERMS.map(([name, key], i) => (
-              <div key={name} className="flex justify-between text-[13px]">
-                <span className="text-ink-2">
-                  <TermKey i={i} />
-                  {name}
-                </span>
-                <span className="num">{fmtBps(quote[key])}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="flex justify-between border-b border-hairline px-3 py-2">
-          <span className="text-muted">Total spread</span>
-          <span className="num font-medium">{fmtBps(spread)}</span>
-        </div>
-        <div className="flex items-baseline justify-between bg-surface-2 px-3 py-3">
-          <span className="font-medium">You receive now</span>
-          <Swap k={quote.payout.toString()} className="num text-xl font-semibold">
-            {fmtUsdc(quote.payout, true)}
-          </Swap>
+          </>
+        }
+      >
+        {fmtUsdc(quote.value, true)}
+      </Line>
+      <div className="ios-row block">
+        <SpreadBar thin legend={false} bps={[quote.baseBps, quote.utilBps, quote.timeBps, quote.creditBps]} />
+        <div className="mt-3 grid gap-1.5">
+          {TERMS.map(([name, key], i) => (
+            <div key={name} className="flex justify-between text-[14px]">
+              <span className="text-ink-2">
+                <TermKey i={i} />
+                {name}
+              </span>
+              <span className="num">{fmtBps(quote[key])}</span>
+            </div>
+          ))}
         </div>
       </div>
-      <dl className="grid gap-1 text-[13px]">
-        <div className="flex justify-between">
-          <dt className="text-muted">Minimum received</dt>
-          <dd className="num">{fmtUsdc(minOut, true)}</dd>
-        </div>
-        <div className="flex justify-between">
-          <dt className="text-muted">Claim pays the vault</dt>
-          <dd className="num whitespace-nowrap" title={fmtDate(quote.settleAt)}>
-            in {timeUntil(quote.settleAt, now)}
-          </dd>
-        </div>
-        <div className="flex justify-between">
-          <dt className="text-muted">Settlement</dt>
-          <dd>Same transaction</dd>
-        </div>
-        <div className="flex justify-between">
-          <dt className="text-muted">Capacity left for {symbol}</dt>
-          <dd className="num">{fmtUsdc(quote.capacityLeft)}</dd>
-        </div>
-      </dl>
+      <Line label="Total spread">{fmtBps(spread)}</Line>
+      <div className="ios-row min-h-[72px]">
+        <Ring value={Number(quote.payout)} max={Number(quote.value)} size={46} stroke={6} color="var(--color-dot-buy)" label={`You keep ${quote.value > 0n ? ((Number(quote.payout) / Number(quote.value)) * 100).toFixed(1) : "0"}% of NAV`}>
+          <span className="num text-[11px] font-semibold">{quote.value > 0n ? Math.round((Number(quote.payout) / Number(quote.value)) * 100) : 0}%</span>
+        </Ring>
+        <span className="flex-1 text-[17px] font-semibold">
+          You receive now
+          <span className="block text-[13px] font-normal text-muted">of the value at NAV</span>
+        </span>
+        <Swap k={quote.payout.toString()} className="num text-[28px] font-bold tracking-[-0.02em]">
+          {fmtUsdc(quote.payout, true)}
+        </Swap>
+      </div>
+      <Line label="Minimum received">{fmtUsdc(minOut, true)}</Line>
+      <Line label="Claim pays the vault">
+        <span title={fmtDate(quote.settleAt)} className="whitespace-nowrap">
+          in {timeUntil(quote.settleAt, now)}
+        </span>
+      </Line>
+      <Line label="Settlement">Same transaction</Line>
+      <Line label={`Capacity left for ${symbol}`}>{fmtUsdc(quote.capacityLeft)}</Line>
     </div>
   );
 }

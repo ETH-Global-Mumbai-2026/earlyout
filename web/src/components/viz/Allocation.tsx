@@ -14,7 +14,7 @@ export function Allocation({ idle, deployed, className }: { idle: bigint; deploy
       <div
         role="img"
         aria-label={`Vault allocation: ${parts.map((p) => `${p.name} ${fmtUsdc(p.value)}, ${p.pct.toFixed(1)}%`).join("; ")}`}
-        className="flex h-2 w-full gap-[2px]"
+        className="flex h-2 w-full min-w-[120px] gap-[2px]"
       >
         {parts
           .filter((p) => p.pct > 0)
@@ -22,7 +22,7 @@ export function Allocation({ idle, deployed, className }: { idle: bigint; deploy
             <div key={p.name} className="h-full rounded-full" style={{ width: `${p.pct}%`, background: p.color }} title={`${p.name}: ${fmtUsdc(p.value)}`} />
           ))}
       </div>
-      <ul className="mt-2.5 flex flex-wrap gap-x-5 gap-y-1">
+      <ul className="mt-2.5 grid gap-1">
         {parts.map((p) => (
           <li key={p.name} className="t-caption inline-flex items-center gap-1.5">
             <span className="size-2.5 rounded-[3px]" style={{ background: p.color }} />
