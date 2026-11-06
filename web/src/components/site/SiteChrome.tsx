@@ -25,7 +25,7 @@ export function SiteNav() {
   return (
     <header className="material sticky top-0 z-30 border-b border-hairline">
       <div className="flex h-14 w-full items-center justify-between gap-4 px-5 sm:px-8 lg:px-12">
-        <Link href="/" className="font-mono text-[15px] tracking-tight" onClick={() => setOpen(false)}>
+        <Link href="/" className="text-[15px] tracking-tight" onClick={() => setOpen(false)}>
           <Logo />
         </Link>
         <nav aria-label="Site" className="hidden items-center gap-6 md:flex">
@@ -34,7 +34,7 @@ export function SiteNav() {
               key={l.href}
               href={l.href}
               aria-current={path === l.href ? "page" : undefined}
-              className={`link-underline font-mono text-[13px] ${path === l.href ? "text-ink" : "text-muted"}`}
+              className={`link-underline text-[14px] ${path === l.href ? "text-ink" : "text-muted"}`}
             >
               {l.label}
             </Link>
@@ -42,7 +42,7 @@ export function SiteNav() {
         </nav>
         <div className="flex items-center gap-1.5">
           <ThemeToggle />
-          <Link href="/sell" className="pressable hidden rounded-full bg-ink px-4 py-1.5 font-mono text-[13px] text-canvas sm:inline-block">
+          <Link href="/sell" className="pressable hidden rounded-full bg-ink px-4 py-1.5 text-[14px] font-medium text-canvas sm:inline-block">
             Open app
           </Link>
           <button
@@ -68,7 +68,7 @@ export function SiteNav() {
           >
             <div className="flex flex-col px-5 py-2">
               {[...siteLinks, { href: "/sell", label: "Open app" }].map((l) => (
-                <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="py-3 font-mono text-sm">
+                <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="py-3 text-[17px]">
                   {l.label}
                 </Link>
               ))}
@@ -100,7 +100,7 @@ export function SiteFooter() {
           links={[["/developers", "Developers"], ["/security", "Security"], [REPO, "GitHub"], [STUDIO, "Arc Studio project"]]}
         />
       </div>
-      <div className="mx-auto max-w-6xl px-5 pb-10 font-mono text-xs text-faint sm:px-8">
+      <div className="mx-auto max-w-6xl px-5 pb-10 text-xs text-faint sm:px-8">
         Not investment advice. Contracts run on Arc testnet and hold test USDC only.
       </div>
     </footer>

@@ -4,7 +4,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* SF Pro on Apple devices (it cannot be bundled with a website); Inter, the closest open match, elsewhere. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", var(--font-inter), "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 
   --color-canvas: #f2f2f2;
@@ -28,6 +29,14 @@
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 
   --radius-card: 16px;
+
+  /* Chart palette: fixed order, validated for CVD and contrast (dataviz skill).
+     1 base, 2 vault usage, 3 time to payout, 4 issuer credit. */
+  --color-viz-1: #2a78d6;
+  --color-viz-2: #eb6834;
+  --color-viz-3: #1baf7a;
+  --color-viz-4: #eda100;
+  --color-viz-track: #e4e4e7;
   --radius-control: 12px;
 }
 
@@ -47,6 +56,11 @@
   --color-buy-soft: rgba(48, 209, 88, 0.14);
   --color-refuse-soft: rgba(255, 159, 10, 0.15);
   --color-halt-soft: rgba(255, 69, 58, 0.15);
+  --color-viz-1: #3987e5;
+  --color-viz-2: #d95926;
+  --color-viz-3: #199e70;
+  --color-viz-4: #c98500;
+  --color-viz-track: #232326;
 }
 
 html {
@@ -114,10 +128,10 @@ body {
   color: var(--color-muted);
 }
 .t-eyebrow {
-  font-family: var(--font-mono);
   font-size: 0.75rem;
+  font-weight: 600;
   line-height: 1.4;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-muted);
 }
@@ -208,8 +222,7 @@ input::-webkit-inner-spin-button {
   grid-template-columns: minmax(5.5rem, 9rem) 1fr auto;
   gap: 0.75rem;
   align-items: baseline;
-  font-family: var(--font-mono);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-variant-numeric: tabular-nums;
   padding: 0.5rem 0;
 }

@@ -11,7 +11,7 @@ export default function NotFound() {
           <div className="t-eyebrow">404 · Not found</div>
           <h1 className="t-hero mt-5 max-w-lg">This page settled early.</h1>
           <p className="t-lede mt-5 max-w-md">The address does not match anything on Earlyout. The app and the company pages are one click away.</p>
-          <div className="mt-8 flex flex-wrap gap-3 font-mono text-sm">
+          <div className="mt-8 flex flex-wrap gap-3 text-[15px] font-medium">
             <Link href="/" className="pressable rounded-full bg-ink px-5 py-2.5 text-canvas">
               Home
             </Link>

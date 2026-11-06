@@ -26,7 +26,7 @@ function Tabs({ id, className }: { id: string; className: string }) {
             key={t.href}
             href={t.href}
             aria-current={active ? "page" : undefined}
-            className={`pressable relative flex-1 rounded-full px-3.5 py-1.5 text-center font-mono text-[13px] ${active ? "text-ink" : "text-muted"}`}
+            className={`pressable relative flex-1 rounded-full px-3.5 py-1.5 text-center text-[14px] font-medium ${active ? "text-ink" : "text-muted"}`}
           >
             {active && (
               <motion.span
@@ -49,7 +49,7 @@ export function Toolbar() {
     <>
       <header className="material sticky top-0 z-20 border-b border-hairline">
         <div className="flex h-14 w-full items-center justify-between gap-3 px-4 sm:px-8">
-          <Link href="/" className="shrink-0 font-mono text-[15px] tracking-tight">
+          <Link href="/" className="shrink-0 text-[15px] tracking-tight">
           <Logo />
           </Link>
           <Tabs id="tab-pill-top" className="hidden rounded-full bg-surface-2 p-1 sm:flex" />

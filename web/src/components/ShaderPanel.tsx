@@ -44,7 +44,7 @@ export function ShaderPanel({
       />
       {caption && (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 p-5">
-          <div className="material inline-flex max-w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-full border border-hairline px-3.5 py-1.5 font-mono text-xs text-ink">
+          <div className="material inline-flex max-w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-full border border-hairline px-3.5 py-1.5 text-xs font-medium tnum text-ink">
             {caption}
           </div>
         </div>

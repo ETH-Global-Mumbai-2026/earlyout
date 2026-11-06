@@ -24,7 +24,7 @@ export function Button({ variant = "primary", size = "md", loading, disabled, cl
       {...rest}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={`pressable inline-flex items-center justify-center gap-2 rounded-full font-mono font-medium tracking-tight disabled:opacity-40 ${v} ${s} ${className}`}
+      className={`pressable inline-flex items-center justify-center gap-2 rounded-full font-semibold disabled:opacity-40 ${v} ${s} ${className}`}
     >
       {loading && <Spinner />}
       {children}
@@ -49,7 +49,7 @@ export function Stat({ label, value, hint, className = "" }: { label: string; va
   return (
     <div className={className}>
       <div className="t-eyebrow">{label}</div>
-      <div className="t-title tnum mt-1 font-mono">{value}</div>
+      <div className="t-title tnum mt-1">{value}</div>
       {hint && <div className="t-caption mt-0.5">{hint}</div>}
     </div>
   );
@@ -62,7 +62,7 @@ export function Row({ label, value, hint }: { label: ReactNode; value: ReactNode
         <div className="t-body">{label}</div>
         {hint && <div className="t-caption">{hint}</div>}
       </div>
-      <div className="tnum text-right font-mono text-sm">{value}</div>
+      <div className="tnum text-right text-[15px] font-medium">{value}</div>
     </div>
   );
 }
@@ -92,7 +92,7 @@ export function VerdictPill({ verdict, reason }: { verdict: Verdict; reason?: st
   return (
     <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 ${s.bg}`} aria-live="polite">
       <span className={`size-2 rounded-full ${s.dot}`} aria-hidden />
-      <span className="font-mono text-sm font-semibold tracking-wide">{verdict}</span>
+      <span className="text-sm font-semibold tracking-wide">{verdict}</span>
       <span className="t-caption">{reason || s.word}</span>
     </div>
   );

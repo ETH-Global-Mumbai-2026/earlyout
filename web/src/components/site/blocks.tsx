@@ -53,7 +53,7 @@ export function Grid({ children, cols = 3 }: { children: ReactNode; cols?: 2 | 3
 export function Tile({ index, title, children }: { index?: string; title: ReactNode; children: ReactNode }) {
   return (
     <div className="bg-canvas p-6 sm:p-8">
-      {index && <div className="font-mono text-xs text-accent">{index}</div>}
+      {index && <div className="text-xs font-semibold tracking-wide text-accent">{index}</div>}
       <h3 className="t-headline mt-3">{title}</h3>
       <div className="t-body mt-2 text-muted">{children}</div>
     </div>
@@ -63,7 +63,7 @@ export function Tile({ index, title, children }: { index?: string; title: ReactN
 export function CTA({ href, children, variant = "primary" }: { href: string; children: ReactNode; variant?: "primary" | "secondary" }) {
   const external = href.startsWith("http");
   const cls = cn(
-    "pressable inline-flex h-11 items-center gap-2 rounded-full px-5 font-mono text-sm",
+    "pressable inline-flex h-11 items-center gap-2 rounded-full px-5 text-[15px] font-medium",
     variant === "primary" ? "bg-ink text-canvas" : "border border-hairline text-ink",
   );
   return external ? (

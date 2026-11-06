@@ -10,11 +10,11 @@ export default function Developers() {
       <PageHeader
         eyebrow="Developers"
         title="Contracts, APIs and the public book."
-        lede="Everything runs on Arc testnet (chain 5042002). USDC is 0x3600000000000000000000000000000000000000, 6 decimals."
+        lede={<>Everything runs on Arc testnet (chain 5042002). USDC is <span className="t-mono break-all">0x3600000000000000000000000000000000000000</span>, 6 decimals.</>}
       />
       <Section eyebrow="Contracts" title="Deployed from Arc Studio, owned by the ops wallet.">
         <div className="card overflow-x-auto">
-          <table className="w-full min-w-[640px] font-mono text-[13px]">
+          <table className="w-full min-w-[640px] text-[13px]">
             <thead>
               <tr className="text-left text-muted">
                 <th className="px-5 py-3 font-normal">Contract</th>
@@ -27,7 +27,7 @@ export default function Developers() {
                 <tr key={addr} className="border-t border-hairline">
                   <td className="px-5 py-3">{name}</td>
                   <td className="px-5 py-3">
-                    <a className="link-underline text-accent" href={`${ARC_EXPLORER}/address/${addr}`} target="_blank" rel="noreferrer">
+                    <a className="link-underline t-mono text-accent" href={`${ARC_EXPLORER}/address/${addr}`} target="_blank" rel="noreferrer">
                       {addr.slice(0, 10)}…{addr.slice(-6)}
                     </a>
                   </td>
