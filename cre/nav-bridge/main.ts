@@ -1,8 +1,10 @@
 // Earlyout NAV bridge: carries a fund's Chainlink NAV feed on Ethereum mainnet,
 // plus the issuer's status from an outside API, to NavOracle on Arc testnet.
 //
-// Trigger: cron. For each configured fund:
-//   1. callContract on mainnet: latestRoundData() and decimals() from the feed
+// Trigger: cron, hourly (the feeds update about daily). For each configured fund:
+//   1. callContract on mainnet: latestRoundData() from the feed, at the last finalized block.
+//      Feed decimals never change, so they come from config: one EVM read per fund keeps ten
+//      funds inside CRE's per-execution read limit.
 //   2. HTTP GET issuerStatusUrl?fund=... in node mode, consensus on identical status
 //   3. encode (fund, nav, navDecimals, updatedAt, status), sign a report, writeReport to NavOracle
 
@@ -18,7 +20,7 @@ import {
   getNetwork,
   handler,
   hexToBase64,
-  LATEST_BLOCK_NUMBER,
+  LAST_FINALIZED_BLOCK_NUMBER,
   type NodeRuntime,
   type Runtime,
 } from "@chainlink/cre-sdk";
@@ -37,6 +39,7 @@ const configSchema = z.object({
       symbol: z.string(),
       fund: z.string().regex(/^0x[0-9a-fA-F]{40}$/),
       feed: z.string().regex(/^0x[0-9a-fA-F]{40}$/),
+      feedDecimals: z.number().int().min(0).max(18),
     }),
   ),
 });
@@ -44,7 +47,6 @@ type Config = z.infer<typeof configSchema>;
 
 const feedAbi = parseAbi([
   "function latestRoundData() view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)",
-  "function decimals() view returns (uint8)",
 ]);
 
 type Result = { fund: string; nav: string; decimals: number; updatedAt: string; status: number; txHash: string };
@@ -55,21 +57,14 @@ function selector(chainName: string) {
   return network.chainSelector.selector;
 }
 
-function readFeed(runtime: Runtime<Config>, evm: EVMClient, feed: `0x${string}`) {
+function readFeed(runtime: Runtime<Config>, evm: EVMClient, feed: `0x${string}`, decimals: number) {
   const roundCall = evm
     .callContract(runtime, {
       call: encodeCallMsg({ from: zeroAddress, to: feed, data: encodeFunctionData({ abi: feedAbi, functionName: "latestRoundData" }) }),
-      blockNumber: LATEST_BLOCK_NUMBER,
-    })
-    .result();
-  const decCall = evm
-    .callContract(runtime, {
-      call: encodeCallMsg({ from: zeroAddress, to: feed, data: encodeFunctionData({ abi: feedAbi, functionName: "decimals" }) }),
-      blockNumber: LATEST_BLOCK_NUMBER,
+      blockNumber: LAST_FINALIZED_BLOCK_NUMBER,
     })
     .result();
   const round = decodeFunctionResult({ abi: feedAbi, functionName: "latestRoundData", data: bytesToHex(roundCall.data) });
-  const decimals = decodeFunctionResult({ abi: feedAbi, functionName: "decimals", data: bytesToHex(decCall.data) });
   if (round[1] <= 0n) throw new Error(`Feed ${feed} returned a non-positive NAV`);
   return { nav: round[1], updatedAt: round[3], decimals };
 }
@@ -95,28 +90,35 @@ const onCron = (runtime: Runtime<Config>): Result[] => {
   const results: Result[] = [];
 
   for (const f of runtime.config.funds) {
-    const feed = readFeed(runtime, feedEvm, f.feed as `0x${string}`);
-    const status = runtime.runInNodeMode(fetchIssuerStatus(f.fund), consensusIdenticalAggregation<string>())().result();
-    const statusCode = status === "FAILED" ? 1 : 0;
-    runtime.log(`${f.symbol}: nav=${feed.nav} dec=${feed.decimals} updatedAt=${feed.updatedAt} status=${status}`);
+    // One fund's bad feed or a failed status call must not silence the others. On an issuer
+    // API outage nothing is reported for that fund: its NAV ages, and the vault halts it once
+    // the NAV passes the fund's maxAge. That is safer than guessing FAILED or OK.
+    try {
+      const feed = readFeed(runtime, feedEvm, f.feed as `0x${string}`, f.feedDecimals);
+      const status = runtime.runInNodeMode(fetchIssuerStatus(f.fund), consensusIdenticalAggregation<string>())().result();
+      const statusCode = status === "FAILED" ? 1 : 0;
+      runtime.log(`${f.symbol}: nav=${feed.nav} dec=${feed.decimals} updatedAt=${feed.updatedAt} status=${status}`);
 
-    const payload = encodeAbiParameters(parseAbiParameters("address fund, uint256 nav, uint8 navDecimals, uint64 updatedAt, uint8 status"), [
-      f.fund as `0x${string}`,
-      feed.nav,
-      feed.decimals,
-      feed.updatedAt,
-      statusCode,
-    ]);
-    const report = runtime
-      .report({ encodedPayload: hexToBase64(payload), encoderName: "evm", signingAlgo: "ecdsa", hashingAlgo: "keccak256" })
-      .result();
-    const write = arcEvm
-      .writeReport(runtime, { receiver: runtime.config.oracleAddress, report, gasConfig: { gasLimit: runtime.config.gasLimit } })
-      .result();
-    if (write.txStatus !== TxStatus.SUCCESS) throw new Error(`writeReport failed for ${f.symbol}: ${write.txStatus}`);
-    const txHash = bytesToHex(write.txHash || new Uint8Array(32));
-    runtime.log(`${f.symbol}: NavOracle updated on Arc, tx ${txHash}`);
-    results.push({ fund: f.fund, nav: feed.nav.toString(), decimals: feed.decimals, updatedAt: feed.updatedAt.toString(), status: statusCode, txHash });
+      const payload = encodeAbiParameters(parseAbiParameters("address fund, uint256 nav, uint8 navDecimals, uint64 updatedAt, uint8 status"), [
+        f.fund as `0x${string}`,
+        feed.nav,
+        feed.decimals,
+        feed.updatedAt,
+        statusCode,
+      ]);
+      const report = runtime
+        .report({ encodedPayload: hexToBase64(payload), encoderName: "evm", signingAlgo: "ecdsa", hashingAlgo: "keccak256" })
+        .result();
+      const write = arcEvm
+        .writeReport(runtime, { receiver: runtime.config.oracleAddress, report, gasConfig: { gasLimit: runtime.config.gasLimit } })
+        .result();
+      if (write.txStatus !== TxStatus.SUCCESS) throw new Error(`writeReport failed: ${write.txStatus}`);
+      const txHash = bytesToHex(write.txHash || new Uint8Array(32));
+      runtime.log(`${f.symbol}: NavOracle updated on Arc, tx ${txHash}`);
+      results.push({ fund: f.fund, nav: feed.nav.toString(), decimals: feed.decimals, updatedAt: feed.updatedAt.toString(), status: statusCode, txHash });
+    } catch (e) {
+      runtime.log(`${f.symbol}: skipped, ${(e as Error).message}`);
+    }
   }
   return results;
 };
