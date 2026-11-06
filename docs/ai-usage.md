@@ -1,14 +1,45 @@
 # How we used AI
 
-ETHGlobal asks for this. Everything below was done at the event, from scratch.
+ETHGlobal's rules ask every team to say where and how AI tools were used, by file, and to include the prompts and planning artifacts. This is that record. All work started at ETHGlobal Mumbai 2026; no code was copied from earlier projects.
 
-| Area | Tool | What the tool did | What we did |
-|---|---|---|---|
-| Idea, scoring, sponsor fit | Claude Code | Researched redemption terms, NAV feeds, Arc and Arkiv docs; scored candidate ideas | Chose the idea, the three tracks and the cut order |
-| `contracts/src`, `contracts/test`, `contracts/script` | Claude Code wrote the first draft; Arc Studio installed dependencies, ran the suite, ran its security scan and fixed findings | Wrote Solidity, tests, deploy script | Wrote the spec and interface, reviewed every contract, decided the pricing formula, caps, halts and the writedown mechanism |
-| Arc Studio prompts | Claude Code drafted, we sent | See `docs/studio/` | Edited and approved each prompt |
-| `web/` | Claude Code | Next.js app, API routes, Arkiv indexer, NAV pusher, Playwright tests | Design direction (Apple-style system, verdict-first screens), review, manual testing |
-| `cre/nav-bridge` | Claude Code from the CRE docs | Workflow code and config | Ran the simulation, set the forwarder |
-| `arkiv/*.md`, `docs/*.md`, README | Claude Code | Drafts | Edited for accuracy; the friction log entries are real snags we hit |
+## Tools
 
-No code was copied from earlier projects. Private keys were never shown to any tool.
+| Tool | Role |
+|---|---|
+| Arc Studio agent (studio.arc.io) | Installed dependencies, ran the contract test suite, ran its security review and Slither, fixed the findings, added tests, created a Circle developer-controlled deployer wallet, deployed and configured the contracts on Arc Testnet, and built a small app in its workspace |
+| Claude Code (Anthropic; Fable 5.1, later Opus 5.5) | Research, the spec and build plan, the first draft of the contracts, the Next.js app, the Arkiv indexer, the CRE workflow, tests, and these documents, under our direction |
+
+## What the team did
+
+- Chose the problem (early exit for funds that redeem on a schedule), the customer (fund distributors and issuers), and the three sponsor tracks.
+- Set the design decisions the code implements: verdict first (BUY, REFUSE, HALT), the four-term spread, exposure caps, the one-transaction writedown, claims valued at cost, and the real-versus-stand-in boundary.
+- Decided to accept the open High finding for the testnet demo and document it.
+- Directed every agent turn, reviewed the output, and approved or rejected it. The prompts we sent to Arc Studio are in `docs/studio/`.
+- Ran the on-chain operations: funding wallets from faucets, approving the Circle API key and backing up the entity secret, the Arkiv access key, the CRE login, and the Vercel project.
+- Chose the visual direction (the dithered theme, the type, the mark) and asked for each change to it.
+
+## By file
+
+| Path | Written by | Reviewed and run by |
+|---|---|---|
+| `docs/spec.md`, `docs/build-plan.md` | Claude Code, from our decisions in chat | team |
+| `contracts/src/*.sol`, `contracts/test/*.t.sol`, `contracts/script/Deploy.s.sol` | first draft by Claude Code; five security fixes and 13 tests by the Arc Studio agent | team; Arc Studio ran the suite and the review |
+| `contracts/deployments/arc-testnet.json`, `docs/studio/04-deployment-transactions.md`, `docs/studio/deploy-earlyout.ts` | Arc Studio agent, during the deploy | team checked ownership and forwarder on chain |
+| `docs/studio/02-security-review.md`, `docs/studio/poc/` | Arc Studio agent | team decided on each finding |
+| `docs/studio/01-*.md`, `03-*.md`, `05-*.md` | the prompts we sent to Arc Studio (drafted with Claude Code) | team |
+| `studio-app/**` | Arc Studio agent, from the prompt in `docs/studio/05-studio-web-app.md` | team, in the Studio preview |
+| `web/src/**` | Claude Code | team: design direction, screenshots reviewed on phone, tablet and desktop |
+| `web/src/components/ui/portfolio-hero-with-paper-shaders.tsx` | pasted from a public component library at our request; the only change is one shape name the installed version lacks | team |
+| `web/e2e/*.spec.ts`, `web/playwright.config.ts` | Claude Code | run on three devices, 66 passing |
+| `web/src/server/arkiv/*`, `web/scripts/arkiv-query.ts` | Claude Code | team ran the sync and the query against Rabdi |
+| `cre/nav-bridge/*` | Claude Code, from the CRE TypeScript docs | team ran `cre workflow simulate --broadcast` three times on Arc Testnet |
+| `arkiv/*.md` | Claude Code; friction entries are snags we actually hit | team |
+| `README.md`, `docs/ai-usage.md`, `docs/demo-script.md` | Claude Code | team |
+| `web/public/brand/*`, icons | Claude Code drew the SVG mark; icons rendered from it | team chose the concept |
+
+## Planning artifacts
+
+- `docs/spec.md`: the build spec.
+- `docs/build-plan.md`: the phased plan, with ownership and checks.
+- `docs/studio/`: every prompt sent to Arc Studio and its outputs.
+- The CRE broadcast logs are in `cre/README.md`.
