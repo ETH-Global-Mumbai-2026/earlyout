@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { fmtUnits } from "@/lib/format";
 
 export function AmountInput({
@@ -17,15 +18,19 @@ export function AmountInput({
   decimals?: number;
   label?: string;
 }) {
+  const id = useId();
   return (
-    <label className="block">
+    <div>
       <div className="mb-1.5 flex items-baseline justify-between">
-        <span className="t-caption">{label}</span>
+        <label htmlFor={id} className="t-caption">
+          {label}
+        </label>
         {balance !== undefined && (
           <button
             type="button"
             className="t-caption pressable text-accent"
             onClick={() => onChange(formatFull(balance, decimals))}
+            aria-label={`Use maximum, ${fmtUnits(balance, decimals)} ${unit}`}
           >
             Max {fmtUnits(balance, decimals)}
           </button>
@@ -33,6 +38,7 @@ export function AmountInput({
       </div>
       <div className="control flex items-center gap-2 px-4 py-3">
         <input
+          id={id}
           type="text"
           inputMode="decimal"
           autoComplete="off"
@@ -43,9 +49,11 @@ export function AmountInput({
           className="t-title tnum flex-1"
           aria-label={`${label} in ${unit}`}
         />
-        <span className="t-headline text-muted">{unit}</span>
+        <span className="t-headline text-muted" aria-hidden>
+          {unit}
+        </span>
       </div>
-    </label>
+    </div>
   );
 }
 
