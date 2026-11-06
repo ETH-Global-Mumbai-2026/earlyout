@@ -14,7 +14,8 @@ export const arcTestnet = defineChain({
 export const wagmiConfig = createConfig({
   chains: [arcTestnet],
   connectors: [injected()],
-  transports: { [arcTestnet.id]: http() },
+  // Batch reads into one JSON-RPC request per tick: Arc's public RPC rate-limits bursts.
+  transports: { [arcTestnet.id]: http(undefined, { batch: { wait: 25, batchSize: 50 }, retryCount: 3, retryDelay: 400 }) },
   ssr: true,
 });
 
