@@ -65,21 +65,23 @@ struct Quote {
 }
 
 function quote(uint256 claimId, uint256 amount) external view returns (Quote memory);
+function quoteFund(address fund, uint256 amount) external view returns (Quote memory); // price before the claim exists
 function sell(uint256 claimId, uint256 amount, uint256 minPayout) external;
 function buy(uint256 claimId, uint256 amount, uint256 maxCost) external;
 
 event ClaimMinted(uint256 claimId, address fund, uint64 settleAt, address owner, uint256 amount);
-event ClaimSold(uint256 claimId, address seller, uint256 amount, uint256 usdcPaid, uint16 spreadBps);
+event ClaimSold(uint256 claimId, address seller, uint256 amount, uint256 usdcPaid,
+                uint256 nav, uint16 baseBps, uint16 utilBps, uint16 timeBps, uint16 creditBps);
 event ClaimBought(uint256 claimId, address buyer, uint256 amount, uint256 usdcCost);
 event ClaimSettled(uint256 claimId, uint256 usdcCollected);
 event FundImpaired(address fund);
-event NavUpdated(address fund, uint256 nav, uint64 updatedAt);
+event NavUpdated(address fund, uint256 nav, uint64 updatedAt, uint8 status);
 ```
 
 ### Safety rules
 
 - Exposure cap per fund: exceeding it returns REFUSE and `sell` reverts.
-- Issuer FAILED or NAV older than `maxAge` (default 26 hours, feeds update daily): HALT.
+- Issuer FAILED or NAV older than the fund's `maxAge` (96 hours: feeds have 24 to 27 hour heartbeats and may skip weekends, so 26 hours would halt every Monday): HALT.
 - Only listed fund tokens are accepted.
 - Only the authorised CRE forwarder can update NavOracle.
 - `sell` takes the claim before paying.
@@ -97,7 +99,9 @@ event NavUpdated(address fund, uint256 nav, uint64 updatedAt);
 | Test USDC faucet | https://faucet.circle.com |
 | CRE forwarder on Arc, simulation | 0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1 |
 | CRE forwarder on Arc, deployed | 0x76c9cf548b4179F8901cda1f8623568b58215E62 |
+| ACRED NAV feed, Ethereum mainnet | 0x35DDfB90011E686CCf837a6819562705076207EB (8 decimals, daily) |
 | USTB NAV feed, Ethereum mainnet | 0x289B5036cd942e619E1Ee48670F98d214E745AAC (6 decimals, daily) |
+| Arc testnet explorer | https://explorer.testnet.arc.io |
 
 ## Sponsor requirements
 
@@ -109,11 +113,14 @@ event NavUpdated(address fund, uint256 nav, uint64 updatedAt);
 
 ## Arkiv entities
 
-| Entity | Fields | Expires |
+| Schema | Fields | Expires |
 |---|---|---|
-| `fund` | symbol, asset class, NAV, updated time, spread terms, cap, status | Shortly after each refresh |
-| `claim` | claim id, fund, settlement date, amount, price, holder, status | On its settlement date |
-| `bid` | fund, settlement date, price, size, bidder, signature | When the bid's validity ends |
+| `earlyout.funds` | symbol, name, NAV, updated time, status, settlement terms, cap, deployed | One day after each refresh |
+| `earlyout.claims` | claim id, fund, symbol, payout date, status, amount, USDC paid, NAV, four spread terms, seller, holder, Arc tx | On its payout date |
+| `earlyout.navs` | fund, NAV, updated time, status, Arc tx | 30 days |
+| `earlyout.cursor` | chain id, last indexed block | 180 days |
+
+Full column types in `arkiv/schema.md`. Bids are a planned fifth schema.
 
 Identity and eligibility data stay off Arkiv.
 
