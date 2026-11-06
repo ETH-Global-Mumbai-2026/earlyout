@@ -15,6 +15,46 @@
       "symbol": "ACREDd",
       "fund": "0x8d9FF934E08DA9f8AEbF2280dAD218e8d176d06F",
       "feed": "0x35DDfB90011E686CCf837a6819562705076207EB"
+    },
+    {
+      "symbol": "JAAA",
+      "fund": "0x7ED73c4653aCf10830f2c5811349bc1d6bF012e1",
+      "feed": "0x3BbccB2301759D2e4A5692bA72DAb4b75dC43B1a"
+    },
+    {
+      "symbol": "JTRSY",
+      "fund": "0xAc28d2d4902a705f33C43816599BCaFD3bb194b3",
+      "feed": "0x0C2e4Df738e99e8db80012f5bb2a303f3f48Ca74"
+    },
+    {
+      "symbol": "USTB",
+      "fund": "0x09367DC8779b7462f41d21ff2782c15D73f7B7D5",
+      "feed": "0x289B5036cd942e619E1Ee48670F98d214E745AAC"
+    },
+    {
+      "symbol": "USCC",
+      "fund": "0x3ff6d44727Cddd81271ca00A1e590818a24Ea3c9",
+      "feed": "0xAfFd8F5578E8590665de561bdE9E7BAdb99300d9"
+    },
+    {
+      "symbol": "USTBL",
+      "fund": "0x577Ed63097665601609fC9381Ca229F15AeD30B6",
+      "feed": "0x477e363c51Ab0C4D13B22CD6B57D56d4a3Cb7Abe"
+    },
+    {
+      "symbol": "SAFO",
+      "fund": "0x5F10C72fF50fB94348d0F16234551f6872a857a2",
+      "feed": "0xC1E5FA6d48ba11cA163b03f2aBf843471eB7B2fB"
+    },
+    {
+      "symbol": "CASH+",
+      "fund": "0x1869711fde2e7d089F3058228cF3AFF4C16a9658",
+      "feed": "0x66C0dB1A21047f0c156d2F39b33B1A47E9fE4583"
+    },
+    {
+      "symbol": "Treasury+",
+      "fund": "0xf767D26EE85e09389f410F28728f0Ddca37610e8",
+      "feed": "0x0c829741d2D2e2536FA1D59E283c8771516fE0cd"
     }
   ]
 }
