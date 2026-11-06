@@ -4,6 +4,7 @@ import { CTA, Container, DataRows, Grid, Section, Tile } from "@/components/site
 import { HeroShowcase } from "@/components/site/HeroShowcase";
 import { HeroTicker } from "@/components/site/HeroTicker";
 import { CashWait } from "@/components/site/CashWait";
+import { OracleDiagram, SaleFlowDiagram, VerdictDiagram } from "@/components/site/Diagrams";
 import { REPO, STUDIO } from "@/components/site/links";
 import { Reveal } from "@/components/motion/Reveal";
 import { SpreadBar } from "@/components/viz/SpreadBar";
@@ -23,13 +24,12 @@ const proofs: { claim: string; how: string; href: string; cta: string }[] = [
 export default function Landing() {
   return (
     <>
-      <a href="#verify" className="block bg-ink py-2.5 text-center text-[13px] text-white/90 hover:text-white">
-        <span className="sm:hidden">See the proof behind every number</span>
-        <span className="hidden sm:inline">See the live contracts, transactions and logs behind every number on this page</span> <span aria-hidden>→</span>
-      </a>
-      <section className="overflow-hidden bg-surface">
-        <Container className="pb-16 pt-12 text-center sm:pb-24 sm:pt-16">
+      <section className="-mt-[70px] overflow-hidden bg-surface pt-[70px]">
+        <Container className="pb-16 pt-10 text-center sm:pb-24 sm:pt-14">
           <Reveal y={12}>
+            <a href="#verify" className="pressable mx-auto mb-8 inline-flex items-center gap-1 rounded-full bg-sunk/80 py-1.5 pl-3.5 pr-2.5 text-[13px] font-medium text-ink-2 hover:text-ink">
+              See the proof behind every number <ChevronRight size={15} aria-hidden />
+            </a>
             <HeroTicker />
             <h1 className="t-hero mx-auto mt-9 max-w-4xl !text-[clamp(2.5rem,5.6vw,4.25rem)]">
               Get paid today. <span className="text-muted">Not when the fund&apos;s window opens.</span>
@@ -88,21 +88,10 @@ export default function Landing() {
         </div>
       </Section>
 
-      <Section center eyebrow="How a sale works" title="Four steps. You sign once.">
-        <Grid cols={4}>
-          <Tile index="1" title="Choose">
-            Pick the fund you hold and see its live NAV and payout date.
-          </Tile>
-          <Tile index="2" title="Quote">
-            The vault answers BUY, REFUSE or HALT and shows the exact price, term by term.
-          </Tile>
-          <Tile index="3" title="Sell">
-            Your redemption becomes a claim, the vault buys it, and USDC lands in the same transaction.
-          </Tile>
-          <Tile index="4" title="Done">
-            On the payout date the issuer pays the vault. You already have your money.
-          </Tile>
-        </Grid>
+      <Section center eyebrow="How a sale works" title="You sign once. USDC arrives in the same transaction.">
+        <div className="card mx-auto max-w-5xl p-4 sm:p-8">
+          <SaleFlowDiagram />
+        </div>
       </Section>
 
       <Section
@@ -186,17 +175,15 @@ export default function Landing() {
       </Section>
 
       <Section tint center eyebrow="Controls" title="The contract decides. The interface cannot overrule it.">
-        <Grid cols={3}>
-          <Tile title={<span className="flex items-center gap-2"><span className="badge bg-buy-soft font-semibold text-buy"><span className="badge-dot" />BUY</span></span>}>
-            The fund is under its exposure cap and the vault holds enough idle USDC. You see the price; you sell.
-          </Tile>
-          <Tile title={<span className="flex items-center gap-2"><span className="badge bg-refuse-soft font-semibold text-refuse"><span className="badge-dot" />REFUSE</span></span>}>
-            The sale would pass the fund&apos;s cap, the vault is short of USDC, or the claim is already due. Nothing moves.
-          </Tile>
-          <Tile title={<span className="flex items-center gap-2"><span className="badge bg-halt-soft font-semibold text-halt"><span className="badge-dot" />HALT</span></span>}>
-            The issuer reports failure or the NAV is stale. Trading stops, and the writedown reaches every LP at once.
-          </Tile>
-        </Grid>
+        <div className="card mx-auto max-w-5xl p-4 sm:p-8">
+          <VerdictDiagram />
+        </div>
+      </Section>
+
+      <Section center eyebrow="Where the price comes from" title="Chainlink sets the price. Arc settles it. Arkiv records it.">
+        <div className="card mx-auto max-w-5xl p-4 sm:p-8">
+          <OracleDiagram />
+        </div>
       </Section>
 
       <Section id="verify" center eyebrow="For judges" title="Verify it in two minutes." lede="Every claim on this page links to its proof: a contract, a transaction, a log or a query you can run yourself.">

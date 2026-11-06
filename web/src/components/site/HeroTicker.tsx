@@ -23,7 +23,7 @@ export function HeroTicker() {
       <div className="mt-3 flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
         {q ? <Money cents6={q.payout * 1000n} className="text-[44px] font-bold leading-none tracking-[-0.03em] text-ink sm:text-[56px]" /> : <span className="text-[44px] font-bold leading-none text-faint sm:text-[56px]">…</span>}
         <span className="text-[17px] text-muted">
-          per ACRED unit, today{q ? <> · vs NAV ${(Number(q.nav / 10n ** 14n) / 10_000).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} paid on {fmtDate(q.settleAt).split(",")[0]}</> : null}
+          per ACRED unit today{q ? <>, against a NAV of ${(Number(q.nav / 10n ** 14n) / 10_000).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} that pays on {fmtDate(q.settleAt).split(",")[0]}</> : null}
         </span>
       </div>
     </div>

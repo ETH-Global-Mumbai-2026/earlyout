@@ -1,4 +1,4 @@
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -11,14 +11,14 @@ export function Container({ children, className }: { children: ReactNode; classN
 /// Sections alternate white and Apple's light grey; headings reveal on scroll.
 export function Section({ id, eyebrow, title, lede, children, className, tint, center }: { id?: string; eyebrow?: string; title?: ReactNode; lede?: ReactNode; children?: ReactNode; className?: string; tint?: boolean; center?: boolean }) {
   return (
-    <section id={id} className={cn("py-20 sm:py-28", tint ? "bg-canvas" : "bg-surface", className)}>
+    <section id={id} className={cn("bg-canvas py-14 sm:py-20", tint && "border-y border-hairline/60 bg-surface-2", className)}>
       <Container>
         <Reveal className={cn(center && "mx-auto max-w-3xl text-center")}>
           {eyebrow && <div className="text-[15px] font-semibold text-accent">{eyebrow}</div>}
           {title && <h2 className={cn("t-display mt-2", !center && "max-w-3xl")}>{title}</h2>}
           {lede && <p className={cn("t-lede mt-4", center ? "mx-auto max-w-2xl" : "max-w-2xl")}>{lede}</p>}
         </Reveal>
-        {children && <div className={cn(title || lede ? "mt-12" : "")}>{children}</div>}
+        {children && <div className={cn(title || lede ? "mt-10" : "")}>{children}</div>}
       </Container>
     </section>
   );
@@ -26,8 +26,8 @@ export function Section({ id, eyebrow, title, lede, children, className, tint, c
 
 export function PageHeader({ eyebrow, title, lede }: { eyebrow: string; title: ReactNode; lede?: ReactNode }) {
   return (
-    <div className="bg-surface">
-      <Container className="pb-16 pt-20 text-center sm:pb-20 sm:pt-28">
+    <div className="-mt-[70px] bg-surface pt-[70px]">
+      <Container className="pb-14 pt-16 text-center sm:pb-16 sm:pt-20">
         <Reveal y={10}>
           <div className="text-[15px] font-semibold text-accent">{eyebrow}</div>
           <h1 className="t-page mx-auto mt-3 max-w-3xl">{title}</h1>
@@ -70,10 +70,10 @@ export function Grid({ children, cols = 3 }: { children: ReactNode; cols?: 2 | 3
 
 export function Tile({ index, title, children }: { index?: string; title: ReactNode; children: ReactNode }) {
   return (
-    <div className="card h-full p-7">
-      {index && <div className="inline-grid h-7 min-w-7 place-items-center rounded-full bg-accent-soft px-2 text-[13px] font-semibold text-accent">{index}</div>}
+    <div className="card h-full p-6">
+      {index && <div className="ios-icon bg-accent text-[14px]">{index.replace(/^0/, "")}</div>}
       <h3 className={cn("text-[17px] font-semibold tracking-[-0.01em] text-ink", index && "mt-4")}>{title}</h3>
-      <div className="mt-2 text-[15px] leading-relaxed text-muted">{children}</div>
+      <div className="mt-1.5 text-[15px] leading-relaxed text-ink-2">{children}</div>
     </div>
   );
 }
@@ -81,10 +81,10 @@ export function Tile({ index, title, children }: { index?: string; title: ReactN
 export function CTA({ href, children, variant = "primary" }: { href: string; children: ReactNode; variant?: "primary" | "secondary" }) {
   const external = href.startsWith("http");
   const cls = cn(
-    "pressable inline-flex h-12 items-center justify-center gap-1.5 rounded-full px-6 text-[16px] font-medium",
-    variant === "primary" ? "bg-accent text-white hover:bg-[#0077ed]" : "bg-sunk text-ink hover:bg-hairline",
+    "pressable inline-flex h-[50px] items-center justify-center gap-1.5 rounded-[14px] px-7 text-[17px] font-semibold",
+    variant === "primary" ? "bg-accent text-white hover:brightness-95" : "bg-accent-soft text-accent hover:brightness-[0.97]",
   );
-  const icon = external ? <ArrowUpRight size={16} /> : variant === "primary" ? <ArrowRight size={16} /> : null;
+  const icon = external ? <ArrowUpRight size={16} /> : null;
   return external ? (
     <a href={href} target="_blank" rel="noreferrer" className={cls}>
       {children} {icon}
