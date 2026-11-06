@@ -83,7 +83,7 @@ flowchart LR
 
 USDC on Arc: `0x3600000000000000000000000000000000000000`. Deployed at block 71057910 from `0xC9007Afa7c9eCd6b0D9da62e3B820f69F730aFf3` and owned by `0xbc832e4FC6a9CBd9c35884Bc744e6499cBFf537B`. Explorer: https://explorer.testnet.arc.io.
 
-Contracts were drafted by our agent, then installed, tested, security-reviewed and fixed in Arc Studio (five Medium findings fixed; prompts and the full report in `docs/studio/`), and pulled into `contracts/` with `arc-studio pull`. 63 Foundry tests. Deployed by Arc Studio from a Circle developer-controlled wallet created in the Studio workspace (`0xC9007Afa7c9eCd6b0D9da62e3B820f69F730aFf3`), following `script/Deploy.s.sol` step by step. The final transactions hand ownership of all eight contracts and the oracle forwarder role to our ops wallet, so the deployer owns nothing. All 34 transactions are listed in `docs/studio/04-deployment-transactions.md`.
+Contracts were drafted with Claude Code, then installed, tested, security-reviewed and fixed in Arc Studio (five Medium findings fixed; prompts and the full report in `docs/studio/`), and pulled into `contracts/` with `arc-studio pull`. 63 Foundry tests. Deployed by Arc Studio from a Circle developer-controlled wallet created in the Studio workspace (`0xC9007Afa7c9eCd6b0D9da62e3B820f69F730aFf3`), following `script/Deploy.s.sol` step by step. The final transactions hand ownership of all eight contracts and the oracle forwarder role to our ops wallet, so the deployer owns nothing. All 34 transactions are listed in `docs/studio/04-deployment-transactions.md`.
 
 ## What is real and what is a stand-in
 
@@ -116,6 +116,7 @@ It runs `select().from(earlyout.claims).where(eq("status","open")).ownedBy(write
 | `contracts/` | Foundry project: `src`, `test`, `script/Deploy.s.sol`, `deployments/` |
 | `web/` | Next.js app and API routes; Arkiv indexer in `src/server/arkiv/`; NAV pusher in `src/server/nav.ts` |
 | `cre/` | Chainlink CRE project and the nav-bridge workflow |
+| `studio-app/` | The app Arc Studio built in its own workspace against the deployed contracts (source pulled with `arc-studio pull`; it runs in the Studio preview) |
 | `arkiv/` | Arkiv judging files |
 | `docs/` | `spec.md`, `build-plan.md`, `ai-usage.md`, `studio/` |
 | `scripts/check.sh` | Local CI gate: forge test, lint, typecheck, build |
@@ -136,6 +137,36 @@ Contracts: `cd contracts && forge test`. Deploy: `forge script script/Deploy.s.s
 - Settlement needs a keeper to call `settle` at maturity. Nothing settles on its own.
 - The demo switches on the Status screen act on the stand-in issuer, testnet only, and can be gated with `DEMO_TOKEN`.
 - Only two funds are listed. The oracle and pricing handle any feed decimals; adding a fund is one registry call.
+
+## Build timeline
+
+We built and reviewed locally and committed in topic-sized batches, so most commits carry two timestamps on the evening of 6 November. The work itself is timestamped independently on Arc, Arkiv, Vercel and GitHub, and anyone can check it:
+
+| Time (IST) | What happened | Proof |
+|---|---|---|
+| 5 Nov, 21:00 | Hacking starts at ETHGlobal Mumbai | event schedule |
+| 6 Nov, 16:47 | Repository created: licence, README, build spec, Arkiv friction log | [first commits](https://github.com/ETH-Global-Mumbai-2026/earlyout/commits/main) |
+| 6 Nov, about 20:45 | Contracts sent into our Arc Studio project; Studio installs dependencies, runs the suite and its security review, fixes five Medium findings | `docs/studio/01-review-and-test.md`, `02-security-review.md` |
+| 6 Nov, about 21:00 | First deployment of the web app to Vercel | Vercel deployment list |
+| 6 Nov, 21:42 | First deploy to Arc Testnet from our own wallet with forge (later superseded) | [tx](https://explorer.testnet.arc.io/tx/0x521ed165a9b18589b7ba634a2c3d64e94e96ba3ae5713cd3d4b5754c562d2fb5) |
+| 6 Nov, 22:09 | Arc Studio deploys and configures all contracts from a Circle developer-controlled wallet: 34 transactions | [first tx](https://explorer.testnet.arc.io/tx/0xaee277c5d705aa62343818e0d7e3a1e8d41736d17cfc072e3f854620c2f5a1aa), `docs/studio/04-deployment-transactions.md` |
+| 6 Nov, 22:51 | First real sale through `depositAndSell` | [tx](https://explorer.testnet.arc.io/tx/0x12aefa9df1553daadc4c026566387f0fdde7cf9af6a0153a5eac5e141973a5ee) |
+| 6 Nov, 22:58 | Deployed backend pushes the Chainlink ACRED NAV to the oracle | [tx](https://explorer.testnet.arc.io/tx/0x2487d33f9c961ad1065d47296f9de53314a5ce8ba622818391a7452c70948c3f) |
+| 6 Nov, 23:11 | Settlement of the demo claim; LP share price rises to 1.011360 | [tx](https://explorer.testnet.arc.io/tx/0x93ef49119e451814a6a8fbc88035459404d375377b23af1583bf3fe990dcf008) |
+| 6 Nov, 23:11 | First entities written to Arkiv | [tx](https://rabdi.explorer.arkiv.network/tx/0x30c138ad4af752e5e6b19eb49e0e730a3917aab532ee8274a5d5b952e95e615a) |
+| 6 Nov, 23:14 to 23:16 | Three CRE broadcasts: issuer OK, FAILED, restored | [OK](https://explorer.testnet.arc.io/tx/0xbeb579c3af949e857109a542ee9a03374f853dd7399062f2f7cd9ab7dba5622f), [FAILED](https://explorer.testnet.arc.io/tx/0x4fd0f3d19eb5b105d84696f71fa9fae2b026a0df552e03dd827e31986b2c5df7), [restored](https://explorer.testnet.arc.io/tx/0xc2ba3ffbce7b1d6543bc80251919a17446fe9de133f3670cd44a5875a5b2540f) |
+| 6 Nov, 23:18 and 23:33 | Reviewed work committed in topic-sized commits; CI passes | GitHub Actions runs |
+| 7 Nov, 00:00 | Arc Studio builds an app in its own workspace against the deployed contracts | `studio-app/`, `docs/studio/05-studio-web-app.md` |
+
+From 7 November on, work is committed as it happens.
+
+## For the submission form
+
+**Arc, Best Smart Contracts with Advanced Stablecoin Logic in Arc Studio.** Seven contracts implement a multi-step USDC settlement: a holder's redemption becomes an ERC-1155 claim, the ERC-4626 vault buys it in the same transaction at NAV minus a four-term spread, collects USDC from the issuer at the payout date, and writes a failed fund down for every LP in one transaction. Conditional logic is on chain: every quote returns BUY, REFUSE or HALT from exposure caps, idle USDC, NAV staleness and issuer status. The contracts were tested and security-reviewed in Arc Studio (63 tests, five Medium findings fixed), deployed from a Circle developer-controlled wallet that Studio created, and connected to the web app at earlyout.vercel.app and to a Studio-built app in the project. Circle tools used: USDC on Arc, Circle Wallets (developer-controlled deployer), Arc Studio and its CLI. Feedback: Studio's deploy action creates one contract at a time and cannot run a Foundry script with follow-up calls, and Arc's USDC calls a blocklist precompile that Foundry's local simulation cannot execute, so any script that moves USDC fails in simulation.
+
+**Arkiv, Build on Arkiv (from scratch).** The public book of open claims lives on Arkiv. Each sale on Arc becomes an entity that expires at its payout date; a fund directory expires a day after its last refresh; NAV history is kept for 30 days. The Book screen reads only from Arkiv, filtered to our writer wallet. Feedback is in `arkiv/friction.md`; the main point: a named schema does not stop another wallet writing entities under it, so every read must filter by owner.
+
+**Chainlink, Best workflow with CRE.** `cre/nav-bridge` reads the ACRED NAV feed on Ethereum mainnet and our issuer status API, and writes a signed report to NavOracle on Arc through the Keystone forwarder. The vault halts on what it writes. Simulated with `--broadcast` three times, including the failure path; logs in `cre/README.md`. Feedback: simulating with `--broadcast` against Arc worked first time once the oracle pointed at the mock forwarder. One snag: zod's `z.string().url()` in our config schema rejected a valid https URL inside the workflow runtime, which surfaced only as "Invalid URL" at engine start; a plain regex works.
 
 ## How we used AI
 
