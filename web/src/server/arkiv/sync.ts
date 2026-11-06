@@ -47,11 +47,23 @@ async function readCursor(owner: Address): Promise<{ key?: Hex; lastBlock: bigin
 }
 
 let inflight: Promise<SyncReport> | null = null;
+let last: { at: number; report: SyncReport } | null = null;
+const DEBOUNCE_MS = 30_000;
 
-/// One sync at a time per instance: overlapping runs would read the same cursor and
-/// write the same claim twice.
+/// One sync at a time per instance (overlapping runs would read the same cursor and
+/// write the same claim twice), and at most one every 30 seconds: the route is public so
+/// the Book updates right after a sale, and this keeps anonymous calls from spending the
+/// Arkiv writer's gas.
 export function syncOnce(): Promise<SyncReport> {
-  if (!inflight) inflight = syncOnceInner().finally(() => (inflight = null));
+  if (last && Date.now() - last.at < DEBOUNCE_MS) return Promise.resolve(last.report);
+  if (!inflight) {
+    inflight = syncOnceInner()
+      .then((report) => {
+        last = { at: Date.now(), report };
+        return report;
+      })
+      .finally(() => (inflight = null));
+  }
   return inflight;
 }
 
@@ -193,6 +205,10 @@ async function syncOnceInner(): Promise<SyncReport> {
     report.fundsRefreshed++;
   }
 
+  // Nothing new: skip the cursor write unless the scan window has moved well past it,
+  // so an empty run costs no Arkiv transaction.
+  const found = sold.length + bought.length + settled.length + navs.length;
+  if (cursorKey && found === 0 && toBlock - lastBlock < 2_000n) return report;
   if (cursorKey) {
     await writer.client.patchEntity(Cursor, cursorKey, { set: { lastBlock: u64(toBlock) } });
   } else {
