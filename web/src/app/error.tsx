@@ -9,14 +9,14 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
   }, [error]);
   return (
     <main className="mx-auto flex min-h-[70dvh] max-w-xl flex-col justify-center px-5">
-      <div className="t-eyebrow">Something went wrong</div>
+      <div className="text-[13px] font-semibold text-accent">Something went wrong</div>
       <h1 className="t-display mt-4">The page hit an error.</h1>
       <p className="t-lede mt-4">Your funds are not affected. Nothing is sent without your wallet&apos;s approval. Try again, or go back home.</p>
       <div className="mt-8 flex gap-3 text-[15px] font-medium">
-        <button type="button" onClick={reset} className="pressable rounded-full bg-ink px-5 py-2.5 text-canvas">
+        <button type="button" onClick={reset} className="pressable rounded-md bg-accent px-5 py-2.5 text-white">
           Try again
         </button>
-        <Link href="/" className="pressable rounded-full border border-hairline px-5 py-2.5">
+        <Link href="/" className="pressable rounded-md border border-line-strong px-5 py-2.5">
           Home
         </Link>
       </div>

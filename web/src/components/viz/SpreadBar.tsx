@@ -8,7 +8,7 @@ import { TERM_COLORS, TERM_INK, TERM_NAMES, Tooltip, useWidth } from "./core";
 /// A tall segmented bar: the whole spread, split into its four terms.
 /// Each block's width is its share of the spread; a block too narrow for its
 /// label prints none (hover, focus and the accessible name still carry it).
-export function SpreadBar({ bps, legend = true, className }: { bps: [number, number, number, number]; legend?: boolean; className?: string }) {
+export function SpreadBar({ bps, legend = true, thin = false, className }: { bps: [number, number, number, number]; legend?: boolean; thin?: boolean; className?: string }) {
   const { ref, width } = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
   const total = bps.reduce((a, b) => a + b, 0);
@@ -27,7 +27,7 @@ export function SpreadBar({ bps, legend = true, className }: { bps: [number, num
 
   return (
     <div className={className}>
-      <div ref={ref} role="img" aria-label={summary} className="relative h-7 w-full">
+      <div ref={ref} role="img" aria-label={summary} className={cn("relative w-full", thin ? "h-1.5" : "h-7")}>
         {width > 0 &&
           blocks.map(({ i, b, x: left, w, share }) => (
             <div
@@ -38,10 +38,10 @@ export function SpreadBar({ bps, legend = true, className }: { bps: [number, num
               onPointerLeave={() => setHover(null)}
               onFocus={() => setHover(i)}
               onBlur={() => setHover(null)}
-              className={cn("absolute top-0 flex h-7 items-center rounded-[4px] px-2 text-xs font-semibold outline-none transition-[filter] duration-150", hover === i && "brightness-110")}
+              className={cn("absolute top-0 flex items-center px-2 text-xs font-semibold outline-none transition-[filter] duration-150", thin ? "h-1.5 rounded-[2px]" : "h-7 rounded-[4px]", hover === i && "brightness-110")}
               style={{ left, width: w, background: TERM_COLORS[i], color: TERM_INK[i] }}
             >
-              {w >= 44 && <span className="tnum">{share}%</span>}
+              {!thin && w >= 44 && <span className="tnum">{share}%</span>}
             </div>
           ))}
         {hover !== null && width > 0 && (

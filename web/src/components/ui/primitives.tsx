@@ -3,6 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import type { Verdict } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "danger" | "ghost";
@@ -12,19 +13,19 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export function Button({ variant = "primary", size = "md", loading, disabled, className = "", children, ...rest }: ButtonProps) {
   const v = {
-    primary: "bg-ink text-canvas",
-    secondary: "border border-hairline bg-surface-2 text-ink",
-    danger: "bg-halt text-white",
-    ghost: "bg-transparent text-accent",
+    primary: "border border-accent bg-accent text-accent-ink hover:bg-[#0077ed]",
+    secondary: "border border-line-strong bg-surface text-ink-2 hover:bg-sunk",
+    danger: "border border-halt bg-halt text-white hover:brightness-110",
+    ghost: "border border-transparent bg-transparent text-accent hover:bg-accent-soft",
   }[variant];
-  const s = { sm: "h-8 px-3 text-sm", md: "h-11 px-4 text-[15px]", lg: "h-13 px-5 text-[17px]" }[size];
+  const s = { sm: "h-8 px-3 text-[13px]", md: "h-10 px-4 text-sm", lg: "h-12 px-5 text-[16px]" }[size];
   return (
     <button
       type="button"
       {...rest}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={`pressable inline-flex items-center justify-center gap-2 rounded-full font-semibold disabled:opacity-40 ${v} ${s} ${className}`}
+      className={cn("pressable inline-flex items-center justify-center gap-2 rounded-xl font-medium disabled:cursor-not-allowed disabled:opacity-40", v, s, className)}
     >
       {loading && <Spinner />}
       {children}
@@ -33,23 +34,31 @@ export function Button({ variant = "primary", size = "md", loading, disabled, cl
 }
 
 export function Spinner({ className = "" }: { className?: string }) {
-  return (
-    <span
-      aria-hidden
-      className={`inline-block size-4 animate-spin rounded-full border-2 border-current border-t-transparent ${className}`}
-    />
-  );
+  return <span aria-hidden className={cn("inline-block size-3.5 animate-spin rounded-full border-2 border-current border-t-transparent", className)} />;
 }
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <section className={`card p-5 ${className}`}>{children}</section>;
+  return <section className={cn("card p-5", className)}>{children}</section>;
+}
+
+/// A card with a titled header row and an optional note on the right.
+export function Panel({ title, note, children, className = "", bodyClassName = "" }: { title: ReactNode; note?: ReactNode; children: ReactNode; className?: string; bodyClassName?: string }) {
+  return (
+    <section className={cn("card min-w-0 overflow-hidden", className)}>
+      <header className="flex items-center justify-between gap-3 border-b border-hairline px-5 py-3.5">
+        <h2 className="t-headline">{title}</h2>
+        {note && <div className="t-caption text-right">{note}</div>}
+      </header>
+      <div className={bodyClassName}>{children}</div>
+    </section>
+  );
 }
 
 export function Stat({ label, value, hint, className = "" }: { label: string; value: ReactNode; hint?: ReactNode; className?: string }) {
   return (
     <div className={className}>
       <div className="t-eyebrow">{label}</div>
-      <div className="t-title tnum mt-1">{value}</div>
+      <div className="num mt-1 text-xl font-semibold">{value}</div>
       {hint && <div className="t-caption mt-0.5">{hint}</div>}
     </div>
   );
@@ -57,48 +66,62 @@ export function Stat({ label, value, hint, className = "" }: { label: string; va
 
 export function Row({ label, value, hint }: { label: ReactNode; value: ReactNode; hint?: ReactNode }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 py-2.5">
-      <div>
-        <div className="t-body">{label}</div>
+    <div className="flex items-baseline justify-between gap-4 py-2">
+      <div className="min-w-0">
+        <div className="text-[13px]">{label}</div>
         {hint && <div className="t-caption">{hint}</div>}
       </div>
-      <div className="tnum text-right text-[15px] font-medium">{value}</div>
+      <div className="num tnum text-right text-[13px] font-medium">{value}</div>
     </div>
   );
 }
 
 export function Notice({ tone = "info", children }: { tone?: "info" | "warn" | "error" | "success"; children: ReactNode }) {
   const c = {
-    info: "bg-surface-2 text-ink",
-    warn: "bg-refuse-soft text-ink",
-    error: "bg-halt-soft text-ink",
-    success: "bg-buy-soft text-ink",
+    info: "border-hairline bg-surface-2 text-ink-2",
+    warn: "border-refuse/30 bg-refuse-soft text-ink",
+    error: "border-halt/30 bg-halt-soft text-ink",
+    success: "border-buy/30 bg-buy-soft text-ink",
   }[tone];
   return (
-    <div role={tone === "error" ? "alert" : "status"} className={`t-body rounded-[12px] px-4 py-3 ${c}`}>
+    <div role={tone === "error" ? "alert" : "status"} className={cn("rounded-xl border px-4 py-3 text-[13px]", c)}>
       {children}
     </div>
   );
 }
 
-const verdictStyle: Record<Verdict, { bg: string; dot: string; word: string }> = {
-  BUY: { bg: "bg-buy-soft", dot: "bg-buy", word: "The vault will buy" },
-  REFUSE: { bg: "bg-refuse-soft", dot: "bg-refuse", word: "Refused" },
-  HALT: { bg: "bg-halt-soft", dot: "bg-halt", word: "Halted" },
+const verdictStyle: Record<Verdict, { cls: string; word: string }> = {
+  BUY: { cls: "bg-buy-soft text-buy", word: "The vault will buy" },
+  REFUSE: { cls: "bg-refuse-soft text-refuse", word: "Refused" },
+  HALT: { cls: "bg-halt-soft text-halt", word: "Halted" },
 };
 
+/// Verdict as a status badge: the word, then the reason. Never colour alone.
 export function VerdictPill({ verdict, reason }: { verdict: Verdict; reason?: string }) {
   const s = verdictStyle[verdict];
   return (
-    <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 ${s.bg}`} aria-live="polite">
-      <span className={`size-2 rounded-full ${s.dot}`} aria-hidden />
-      <span className="text-sm font-semibold tracking-wide">{verdict}</span>
+    <span className="inline-flex flex-wrap items-center gap-2" aria-live="polite">
+      <span className={cn("badge font-semibold tracking-wide", s.cls)}>
+        <span className="badge-dot" />
+        {verdict}
+      </span>
       <span className="t-caption">{reason || s.word}</span>
-    </div>
+    </span>
   );
 }
 
-/// Fade-and-rise swap for a value that changes in place. Occasional tier, ease-out, under 250ms.
+export function Badge({ tone = "neutral", children }: { tone?: "neutral" | "good" | "warn" | "bad" | "accent"; children: ReactNode }) {
+  const c = {
+    neutral: "bg-sunk text-ink-2",
+    good: "bg-buy-soft text-buy",
+    warn: "bg-refuse-soft text-refuse",
+    bad: "bg-halt-soft text-halt",
+    accent: "bg-accent-soft text-accent",
+  }[tone];
+  return <span className={cn("badge", c)}>{children}</span>;
+}
+
+/// Fade swap for a value that changes in place. Short and quiet.
 export function Swap({ k, children, className = "" }: { k: string; children: ReactNode; className?: string }) {
   const reduce = useReducedMotion();
   return (
@@ -106,10 +129,10 @@ export function Swap({ k, children, className = "" }: { k: string; children: Rea
       <motion.div
         key={k}
         className={className}
-        initial={reduce ? { opacity: 0 } : { opacity: 0, transform: "translateY(4px)" }}
-        animate={{ opacity: 1, transform: "translateY(0px)" }}
-        exit={reduce ? { opacity: 0 } : { opacity: 0, transform: "translateY(-4px)" }}
-        transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: reduce ? 0 : 0.14 }}
       >
         {children}
       </motion.div>
@@ -117,7 +140,7 @@ export function Swap({ k, children, className = "" }: { k: string; children: Rea
   );
 }
 
-/// Bottom sheet for receipts. Enters and leaves through the bottom; a drawer-tier duration.
+/// Confirmation dialog for receipts. Centered, no bounce.
 export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
   const reduce = useReducedMotion();
   return (
@@ -126,25 +149,25 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
         <>
           <motion.button
             aria-label="Close"
-            className="fixed inset-0 z-30 bg-black/30"
+            className="fixed inset-0 z-30 bg-black/30 backdrop-blur-[2px]"
             onClick={onClose}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.15 }}
           />
           <motion.div
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            className="card fixed inset-x-0 bottom-0 z-40 mx-auto max-w-xl rounded-b-none p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:bottom-6 sm:rounded-b-[18px]"
-            initial={reduce ? { opacity: 0 } : { transform: "translateY(100%)" }}
-            animate={reduce ? { opacity: 1 } : { transform: "translateY(0%)" }}
-            exit={reduce ? { opacity: 0 } : { transform: "translateY(100%)" }}
-            transition={{ duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
+            className="card fixed inset-x-3 bottom-3 z-40 mx-auto max-w-md p-6 shadow-[var(--shadow-float)] sm:inset-x-0 sm:bottom-auto sm:top-[28%]"
+            initial={reduce ? { opacity: 0 } : { opacity: 0, transform: "translateY(24px) scale(0.98)" }}
+            animate={{ opacity: 1, transform: "translateY(0px) scale(1)" }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, transform: "translateY(24px) scale(0.98)" }}
+            transition={reduce ? { duration: 0.15 } : { type: "spring", bounce: 0, duration: 0.4 }}
           >
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="t-title">{title}</h2>
+              <h2 className="t-headline">{title}</h2>
               <Button variant="secondary" size="sm" onClick={onClose}>
                 Done
               </Button>
@@ -158,9 +181,8 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
 }
 
 export function Segmented<T extends string>({ value, onChange, options, label }: { value: T; onChange: (v: T) => void; options: { value: T; label: string }[]; label: string }) {
-  const reduce = useReducedMotion();
   return (
-    <div role="radiogroup" aria-label={label} className="inline-flex rounded-full bg-surface-2 p-1">
+    <div role="radiogroup" aria-label={label} className="relative inline-grid auto-cols-fr grid-flow-col rounded-[10px] bg-sunk p-0.5">
       {options.map((o) => {
         const active = o.value === value;
         return (
@@ -170,13 +192,13 @@ export function Segmented<T extends string>({ value, onChange, options, label }:
             role="radio"
             aria-checked={active}
             onClick={() => onChange(o.value)}
-            className={`pressable relative rounded-full px-3.5 py-1.5 text-sm font-medium ${active ? "text-ink" : "text-muted"}`}
+            className={cn("pressable relative rounded-[8px] px-3.5 py-1.5 text-[13px] font-medium", active ? "text-ink" : "text-muted hover:text-ink")}
           >
             {active && (
               <motion.span
                 layoutId={`seg-${label}`}
-                className="absolute inset-0 rounded-full bg-surface shadow-sm"
-                transition={reduce ? { duration: 0 } : { type: "spring", bounce: 0, duration: 0.35 }}
+                className="absolute inset-0 rounded-[8px] bg-surface shadow-[0_1px_3px_rgba(0,0,0,0.12),0_0_0_0.5px_rgba(0,0,0,0.04)]"
+                transition={{ type: "spring", bounce: 0, duration: 0.35 }}
               />
             )}
             <span className="relative">{o.label}</span>
