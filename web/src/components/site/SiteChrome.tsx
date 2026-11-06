@@ -62,7 +62,7 @@ export function SiteNav() {
         <div className="flex items-center gap-1.5 justify-self-end">
           <LiveNav />
           <ThemeToggle className="hidden sm:grid" />
-          <Link href="/sell" className="pressable inline-flex h-[42px] items-center whitespace-nowrap rounded-full bg-accent px-5 text-[15px] font-semibold text-white hover:brightness-95">
+          <Link href="/sell" className="pressable inline-flex h-[42px] items-center whitespace-nowrap rounded-full bg-accent px-5 text-[15px] font-semibold text-accent-ink hover:opacity-90">
             Launch app
           </Link>
           <button

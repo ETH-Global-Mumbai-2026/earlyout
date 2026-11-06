@@ -13,29 +13,29 @@
   --font-sans: var(--font-averta), -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 
-  /* Earlyout palette, light: navy from the mark, one signal blue for every
-     action, cool grey neutrals; green, amber and red mean BUY, REFUSE, HALT only. */
-  --color-canvas: #f4f6fa;
+  /* Earlyout palette, light: black and white. Neutral greys with no tint, ink as
+     the one action colour; green, amber and red mean BUY, REFUSE, HALT only. */
+  --color-canvas: #f5f5f5;
   --color-surface: #ffffff;
-  --color-surface-2: #f8fafc;
-  --color-sunk: #e9edf4;
-  --color-ink: #0f172a;
-  --color-ink-2: #334155;
-  --color-muted: #5b6475;
-  --color-faint: #98a2b3;
-  --color-hairline: #e3e8ef;
-  --color-line-strong: #cbd3df;
-  --color-brand: #0b2545;
-  --color-brand-2: #1e3a8a;
-  --color-accent: #2563eb;
+  --color-surface-2: #fafafa;
+  --color-sunk: #ececec;
+  --color-ink: #0a0a0a;
+  --color-ink-2: #333333;
+  --color-muted: #666666;
+  --color-faint: #a3a3a3;
+  --color-hairline: #e5e5e5;
+  --color-line-strong: #d4d4d4;
+  --color-brand: #0a0a0a;
+  --color-brand-2: #525252;
+  --color-accent: #0a0a0a;
   --color-accent-ink: #ffffff;
-  --color-accent-soft: #e8eefb;
+  --color-accent-soft: #f0f0f0;
   --color-buy: #1f7a4d;
   --color-refuse: #a15c00;
   --color-halt: #b42318;
-  --color-buy-soft: #e7f4ec;
-  --color-refuse-soft: #fbf1e2;
-  --color-halt-soft: #fbeae8;
+  --color-buy-soft: #e9f5ee;
+  --color-refuse-soft: #fbf2e4;
+  --color-halt-soft: #fbecea;
   --color-dot-buy: #1f9d5c;
   --color-chainlink: #375bd2;
 
@@ -62,25 +62,27 @@
    grouped cells still read as raised. iOS system colours use their dark variants. */
 .dark {
   color-scheme: dark;
-  --color-canvas: #0a1020;
-  --color-surface: #111a2e;
-  --color-surface-2: #15203a;
-  --color-sunk: #1c2842;
-  --color-ink: #e6eaf2;
-  --color-ink-2: #c3cad8;
-  --color-muted: #8c96aa;
-  --color-faint: #5e6880;
-  --color-hairline: #1f2b44;
-  --color-line-strong: #2c3a57;
-  --color-brand-2: #3b5ba9;
-  --color-accent: #5b8def;
-  --color-accent-soft: #16284a;
+  --color-canvas: #0a0a0a;
+  --color-surface: #161616;
+  --color-surface-2: #1c1c1c;
+  --color-sunk: #262626;
+  --color-ink: #fafafa;
+  --color-ink-2: #d4d4d4;
+  --color-muted: #a3a3a3;
+  --color-faint: #6b6b6b;
+  --color-hairline: #262626;
+  --color-line-strong: #3a3a3a;
+  --color-brand: #fafafa;
+  --color-brand-2: #a3a3a3;
+  --color-accent: #fafafa;
+  --color-accent-ink: #0a0a0a;
+  --color-accent-soft: #262626;
   --color-buy: #4acb8a;
   --color-refuse: #e3a443;
   --color-halt: #f2675b;
-  --color-buy-soft: #10291f;
-  --color-refuse-soft: #2b2010;
-  --color-halt-soft: #2e1514;
+  --color-buy-soft: #12261b;
+  --color-refuse-soft: #2a2010;
+  --color-halt-soft: #2c1513;
   --color-dot-buy: #3dbe7e;
   --color-chainlink: #6f8cf0;
   --color-viz-1: #5a87f0;
@@ -237,7 +239,7 @@ body {
   border-radius: var(--radius-card);
   box-shadow:
     0 0 0 1px var(--color-hairline),
-    0 1px 2px rgba(15, 23, 42, 0.04);
+    0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 @layer components {
@@ -248,7 +250,7 @@ body {
   border-radius: var(--radius-card);
   box-shadow:
     0 0 0 1px var(--color-hairline),
-    0 1px 2px rgba(15, 23, 42, 0.04);
+    0 1px 2px rgba(0, 0, 0, 0.04);
   overflow: hidden;
 }
 .ios-header {
@@ -287,7 +289,7 @@ body {
   height: 30px;
   flex-shrink: 0;
   border-radius: 8px;
-  color: #fff;
+  color: var(--color-surface);
   font-size: 13px;
   font-weight: 700;
 }

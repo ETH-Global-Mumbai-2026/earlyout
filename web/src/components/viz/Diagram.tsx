@@ -55,7 +55,7 @@ export function Diagram({ id, width, height, nodes, edges, label, steps }: { id:
             <g key={n.id}>
               <rect x={n.x} y={n.y} width={n.w} height={h} rx={16} style={{ fill: "var(--color-surface)", stroke: "var(--color-hairline)" }} strokeWidth={1} />
               <rect x={n.x + 14} y={n.y + h / 2 - 18} width={36} height={36} rx={10} style={{ fill: TONE[n.tone] }} />
-              <Icon x={n.x + 22} y={n.y + h / 2 - 10} width={20} height={20} color="#fff" strokeWidth={2.2} />
+              <Icon x={n.x + 22} y={n.y + h / 2 - 10} width={20} height={20} strokeWidth={2.2} style={{ color: "var(--color-surface)" }} />
               <text x={n.x + 62} y={n.y + (n.sub ? h / 2 - 4 : h / 2 + 5)} style={{ fill: "var(--color-ink)", fontSize: 15, fontWeight: 600 }}>
                 {n.title}
               </text>

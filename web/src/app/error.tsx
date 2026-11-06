@@ -13,7 +13,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
       <h1 className="t-display mt-4">The page hit an error.</h1>
       <p className="t-lede mt-4">Your funds are not affected. Nothing is sent without your wallet&apos;s approval. Try again, or go back home.</p>
       <div className="mt-8 flex gap-3 text-[15px] font-medium">
-        <button type="button" onClick={reset} className="pressable rounded-md bg-accent px-5 py-2.5 text-white">
+        <button type="button" onClick={reset} className="pressable rounded-md bg-accent px-5 py-2.5 text-accent-ink">
           Try again
         </button>
         <Link href="/" className="pressable rounded-md border border-line-strong px-5 py-2.5">

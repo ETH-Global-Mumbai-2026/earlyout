@@ -22,7 +22,7 @@ const ICON: Record<string, string> = { ACRED: "var(--color-accent)", ACREDd: "va
 
 function FundIcon({ f, muted }: { f: Fund; muted?: boolean }) {
   return (
-    <span aria-hidden className="ios-icon" style={{ background: muted ? "var(--color-faint)" : (ICON[f.symbol] ?? "var(--color-accent)") }}>
+    <span aria-hidden className="ios-icon" style={{ background: muted ? "var(--color-muted)" : (ICON[f.symbol] ?? "var(--color-accent)") }}>
       {f.symbol.slice(0, 1)}
     </span>
   );

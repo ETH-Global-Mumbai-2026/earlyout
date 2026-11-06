@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 export function LogoMark({ className, title = "Earlyout" }: { className?: string; title?: string }) {
   return (
     <svg viewBox="0 0 32 32" fill="none" role="img" aria-label={title} className={cn("size-7 shrink-0", className)}>
-      <rect width="32" height="32" rx="7" className="fill-brand dark:fill-[#1e3a8a]" />
+      <rect width="32" height="32" rx="7" className="fill-[#0a0a0a] dark:fill-[#262626]" />
       <path d="M20.55 11.41A8 8 0 1 0 20.55 20.59" stroke="#FFFFFF" strokeWidth="2.6" strokeLinecap="round" />
       <path d="M14 16V11" stroke="#FFFFFF" strokeWidth="2.6" strokeLinecap="round" />
       <path d="M14 16H26.5M23.4 12.9L26.5 16L23.4 19.1" stroke="#7AA7FF" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />

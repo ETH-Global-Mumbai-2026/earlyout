@@ -82,7 +82,7 @@ export function CTA({ href, children, variant = "primary" }: { href: string; chi
   const external = href.startsWith("http");
   const cls = cn(
     "pressable inline-flex h-[50px] items-center justify-center gap-1.5 rounded-[14px] px-7 text-[17px] font-semibold",
-    variant === "primary" ? "bg-accent text-white hover:brightness-95" : "bg-accent-soft text-accent hover:brightness-[0.97]",
+    variant === "primary" ? "bg-accent text-accent-ink hover:opacity-90" : "bg-accent-soft text-accent hover:brightness-[0.97]",
   );
   const icon = external ? <ArrowUpRight size={16} /> : null;
   return external ? (

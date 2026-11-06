@@ -14,7 +14,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 export function Button({ variant = "primary", size = "md", loading, disabled, className = "", children, ...rest }: ButtonProps) {
   const v = {
     // iOS: filled, tinted, gray and plain buttons.
-    primary: "bg-accent text-accent-ink hover:brightness-95 active:brightness-90",
+    primary: "bg-accent text-accent-ink hover:opacity-90 active:opacity-80",
     secondary: "bg-accent-soft text-accent hover:brightness-[0.97]",
     danger: "bg-halt-soft text-halt hover:brightness-[0.97]",
     ghost: "bg-transparent text-accent hover:bg-accent-soft",
@@ -201,7 +201,7 @@ export function Segmented<T extends string>({ value, onChange, options, label }:
             {active && (
               <motion.span
                 layoutId={`seg-${label}`}
-                className="absolute inset-0 rounded-[7px] bg-surface shadow-[0_3px_8px_rgba(0,0,0,0.12),0_3px_1px_rgba(0,0,0,0.04)] dark:bg-[#2a3756]"
+                className="absolute inset-0 rounded-[7px] bg-surface shadow-[0_3px_8px_rgba(0,0,0,0.12),0_3px_1px_rgba(0,0,0,0.04)] dark:bg-[#3a3a3a]"
                 transition={{ type: "spring", bounce: 0, duration: 0.35 }}
               />
             )}
