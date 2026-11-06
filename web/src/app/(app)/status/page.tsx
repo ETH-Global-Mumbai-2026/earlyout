@@ -6,6 +6,7 @@ import { useState } from "react";
 import { fmtDate, fmtDuration, fmtNav, fmtUsdc, timeAgo } from "@/lib/format";
 import { MODE } from "@/lib/addresses";
 import { useNow } from "@/hooks/useNow";
+import { Meter } from "@/components/viz/Meter";
 
 export default function StatusPage() {
   const funds = useFunds();
@@ -48,6 +49,10 @@ export default function StatusPage() {
                 <span className={`size-2 rounded-full ${tone}`} aria-hidden />
                 {f.impaired ? "Impaired" : f.status === 1 ? "Issuer failed" : stale ? "NAV stale" : "Healthy"}
               </span>
+            </div>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <Meter label="NAV age against the halt limit" value={now - f.navUpdatedAt} max={f.maxAge} valueText={`${fmtDuration(Math.max(0, now - f.navUpdatedAt))} of ${fmtDuration(f.maxAge)}`} />
+              <Meter label="Vault exposure against the cap" value={Number(f.deployedUsdc)} max={Number(f.capUsdc)} valueText={`${fmtUsdc(f.deployedUsdc)} of ${fmtUsdc(f.capUsdc)}`} />
             </div>
             <div className="hairline-rows mt-3">
               <Row label="NAV" value={fmtNav(f.nav)} hint={`Updated ${timeAgo(f.navUpdatedAt, now)}, ${fmtDate(f.navUpdatedAt)}`} />

@@ -5,6 +5,7 @@ import { AmountInput } from "@/components/AmountInput";
 import { Button, Card, Notice, Segmented, Spinner, Stat } from "@/components/ui/primitives";
 import { errorMessage, useAccountState, useDeposit, useVault, useWallet, useWithdraw } from "@/hooks/useEarlyout";
 import { fmtUsdc, parseUnitsSafe } from "@/lib/format";
+import { Allocation } from "@/components/viz/Allocation";
 
 export default function VaultPage() {
   const vault = useVault();
@@ -53,6 +54,7 @@ export default function VaultPage() {
           <Stat label="Total assets" value={fmtUsdc(v.totalAssets)} />
           <Stat label="Idle USDC" value={fmtUsdc(v.idle)} hint="Available to buy claims" />
           <Stat label="In claims" value={fmtUsdc(v.deployed)} hint={`${pct}% deployed`} />
+          <Allocation className="col-span-2 sm:col-span-4" idle={v.idle} deployed={v.deployed} />
         </Card>
       )}
 

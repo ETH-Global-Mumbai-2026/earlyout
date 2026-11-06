@@ -7,6 +7,7 @@ import { useNow } from "@/hooks/useNow";
 import { txUrl } from "@/lib/chain";
 import { fmtBps, fmtDate, fmtNav, fmtUnits, fmtUsdc, shortAddr, timeUntil } from "@/lib/format";
 import type { BookClaim } from "@/server/arkiv/read";
+import { ClaimsTimeline } from "@/components/viz/ClaimsTimeline";
 
 type Book = { claims: BookClaim[]; writer: string | null; explorer: string; source: string };
 
@@ -54,6 +55,13 @@ export default function BookPage() {
               {rows.length} open · {fmtUsdc(rows.reduce((a, c) => a + BigInt(c.usdcPaid), 0n))} deployed
             </span>
           </div>
+
+          {rows.length > 0 && (
+            <Card>
+              <div className="t-eyebrow">Payout timeline</div>
+              <ClaimsTimeline className="mt-3" claims={rows} now={now} />
+            </Card>
+          )}
 
           {rows.length === 0 && (
             <Card>
