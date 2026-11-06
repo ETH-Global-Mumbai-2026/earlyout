@@ -1,5 +1,6 @@
 import "server-only";
 import { asc, eq } from "@arkiv-network/sdk/query";
+import type { Address } from "viem";
 import { arkivPublic } from "./client";
 import { Claims, Funds } from "./schema";
 
@@ -39,9 +40,17 @@ export type BookFund = {
   expiresAt: number;
 };
 
+/// Only entities written by Earlyout's writer wallet count. Arkiv is permissionless,
+/// so anyone can create an entity tagged earlyout.claims; ownedBy keeps those out.
+function writer(): Address {
+  const w = process.env.ARKIV_WRITER_ADDRESS;
+  if (!w || !/^0x[0-9a-fA-F]{40}$/.test(w)) throw new Error("ARKIV_WRITER_ADDRESS is not set");
+  return w as Address;
+}
+
 /// The one query a judge can run themselves (see README): open claims, soonest payout first.
 export async function openClaims(): Promise<BookClaim[]> {
-  const page = await arkivPublic.select().from(Claims).where(eq("status", "open")).orderBy(asc("settleAt")).limit(100).fetch();
+  const page = await arkivPublic.select().from(Claims).where(eq("status", "open")).ownedBy(writer()).orderBy(asc("settleAt")).limit(100).fetch();
   return page.entities.map((r) => ({
     key: r.$key,
     claimId: r.claimId.value,
@@ -66,7 +75,7 @@ export async function openClaims(): Promise<BookClaim[]> {
 }
 
 export async function fundDirectory(): Promise<BookFund[]> {
-  const page = await arkivPublic.select().from(Funds).orderBy(asc("symbol")).limit(100).fetch();
+  const page = await arkivPublic.select().from(Funds).ownedBy(writer()).orderBy(asc("symbol")).limit(100).fetch();
   return page.entities.map((r) => ({
     key: r.$key,
     fund: r.fund.value,

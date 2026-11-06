@@ -84,7 +84,7 @@ export function useSetIssuerFailed() {
     mutationFn: async (failed: boolean) => {
       const res = await fetch("/api/issuer-status", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", "x-demo-token": demoKey() },
         body: JSON.stringify({ failed }),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? "Could not update issuer status");
@@ -122,6 +122,15 @@ export function useTryAsJudge() {
     },
     onSettled: done,
   });
+}
+
+export function demoKey(): string {
+  if (typeof window === "undefined") return "";
+  return window.sessionStorage.getItem("earlyout-demo-key") ?? "";
+}
+
+export function setDemoKey(v: string) {
+  window.sessionStorage.setItem("earlyout-demo-key", v.trim());
 }
 
 export function errorMessage(e: unknown): string {

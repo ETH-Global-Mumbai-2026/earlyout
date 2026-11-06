@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { issuerAbi } from "@/lib/abi";
-import { serverEnv } from "@/server/env";
+import { demoAuthorized, serverEnv } from "@/server/env";
 import { mockIssuerFailed, setMockIssuerFailed } from "@/lib/source/mock";
 
 
@@ -17,9 +17,10 @@ export async function GET(req: Request) {
   }
 }
 
-/// POST {"failed": true|false}  (demo switch; optional DEMO_TOKEN via x-demo-token header)
+/// POST {"failed": true|false}: demo switch. Requires the DEMO_TOKEN in an x-demo-token header
+/// (fails closed when DEMO_TOKEN is unset), so nobody can leave the live demo halted.
 export async function POST(req: Request) {
-  if (serverEnv.demoToken && req.headers.get("x-demo-token") !== serverEnv.demoToken) {
+  if (serverEnv.mode !== "mock" && !demoAuthorized(req)) {
     return NextResponse.json({ error: "Demo key required" }, { status: 401 });
   }
   let body: { failed?: unknown };

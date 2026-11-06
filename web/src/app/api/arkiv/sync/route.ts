@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { serverEnv } from "@/server/env";
+import { demoAuthorized, serverEnv } from "@/server/env";
 
 /// POST or GET /api/arkiv/sync: index new Arc events into Arkiv. Idempotent.
 /// Optional CRON_SECRET (Vercel cron sends it as a bearer token).
 async function run(req: Request) {
   const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.get("authorization") !== `Bearer ${secret}` && req.headers.get("x-demo-token") !== serverEnv.demoToken) {
+  if (secret && req.headers.get("authorization") !== `Bearer ${secret}` && !demoAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   if (serverEnv.mode === "mock") return NextResponse.json({ mode: "mock", synced: 0 });
