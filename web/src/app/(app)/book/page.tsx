@@ -1,118 +1,102 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { Abbr } from "@/components/ui/Abbr";
 import { useState } from "react";
-import { Card, Notice, Segmented, Spinner } from "@/components/ui/primitives";
+import { Notice, Panel, Segmented, Spinner } from "@/components/ui/primitives";
+import { ClaimsTimeline } from "@/components/viz/ClaimsTimeline";
+import { AppHeader } from "@/components/AppHeader";
+import { useBook } from "@/hooks/useBook";
 import { useNow } from "@/hooks/useNow";
 import { txUrl } from "@/lib/chain";
-import { fmtBps, fmtDate, fmtNav, fmtUnits, fmtUsdc, shortAddr, timeUntil } from "@/lib/format";
-import type { BookClaim } from "@/server/arkiv/read";
-import { ClaimsTimeline } from "@/components/viz/ClaimsTimeline";
-
-type Book = { claims: BookClaim[]; writer: string | null; explorer: string; source: string };
-
-async function fetchBook(): Promise<Book> {
-  const res = await fetch("/api/book");
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.error ?? "Could not read the book");
-  return body;
-}
+import { fmtDate, fmtUnits, fmtUsdc, shortAddr, timeUntil } from "@/lib/format";
 
 export default function BookPage() {
-  const book = useQuery({ queryKey: ["book"], queryFn: fetchBook, refetchInterval: 10_000 });
+  const book = useBook();
   const now = useNow(10_000);
   const [filter, setFilter] = useState<string>("all");
   const symbols = Array.from(new Set(book.data?.claims.map((c) => c.symbol) ?? []));
   const rows = (book.data?.claims ?? []).filter((c) => filter === "all" || c.symbol === filter);
+  const total = rows.reduce((a, c) => a + BigInt(c.usdcPaid), 0n);
 
   return (
-    <div className="space-y-5">
-      <header>
-        <div className="t-eyebrow">02 · Book</div>
-        <h1 className="t-display mt-2">Book</h1>
-        <p className="t-body mt-2 text-muted">
-          Every open claim, with its price and the four reasons behind it. Read from Arkiv, so it exists without our server, and each entry expires on its payout date.
-        </p>
-      </header>
+    <div className="grid gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <AppHeader title="Book">
+          Every open claim, read straight from Arkiv, a public database anyone can query. Each entry disappears on its payout date without anyone deleting it.
+        </AppHeader>
+        {book.data && (
+          <Segmented label="Fund" value={filter} onChange={setFilter} options={[{ value: "all", label: "All" }, ...symbols.map((s) => ({ value: s, label: s }))]} />
+        )}
+      </div>
 
       {book.isPending && (
-        <div className="flex justify-center py-10">
-          <Spinner className="text-muted" />
+        <div className="flex justify-center py-10 text-muted">
+          <Spinner />
         </div>
       )}
       {book.isError && <Notice tone="error">{(book.error as Error).message}</Notice>}
 
       {book.data && (
         <>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <Segmented
-              label="Fund"
-              value={filter}
-              onChange={setFilter}
-              options={[{ value: "all", label: "All" }, ...symbols.map((s) => ({ value: s, label: s }))]}
-            />
-            <span className="t-caption tnum">
-              {rows.length} open · {fmtUsdc(rows.reduce((a, c) => a + BigInt(c.usdcPaid), 0n))} deployed
-            </span>
-          </div>
-
           {rows.length > 0 && (
-            <Card>
-              <div className="t-eyebrow">Payout timeline</div>
-              <ClaimsTimeline className="mt-3" claims={rows} now={now} />
-            </Card>
+            <Panel title="Payout timeline" note="One lane per fund, one dot per claim" bodyClassName="px-4 pb-3 pt-2">
+              <ClaimsTimeline claims={rows} now={now} />
+            </Panel>
           )}
-
-          {rows.length === 0 && (
-            <Card>
-              <Notice>No open claims yet. Sell one and it appears here within seconds.</Notice>
-            </Card>
-          )}
-
-          <ul className="space-y-3">
-            {rows.map((c) => {
-              const spread = c.baseBps + c.utilBps + c.timeBps + c.creditBps;
-              return (
-                <li key={c.key}>
-                  <Card>
-                    <div className="flex items-baseline justify-between gap-3">
-                      <div>
-                        <div className="t-headline">
-                          {fmtUnits(BigInt(c.amount))} {c.symbol}
-                        </div>
-                        <div className="t-caption tnum">
-                          Pays {fmtDate(c.settleAt)} · in {timeUntil(c.settleAt, now)}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="t-title tnum">{fmtUsdc(BigInt(c.usdcPaid))}</div>
-                        <div className="t-caption tnum">at NAV {fmtNav(BigInt(c.nav))}, {fmtBps(spread)} spread</div>
-                      </div>
-                    </div>
-                    <div className="t-caption tnum mt-3 flex flex-wrap gap-x-4 gap-y-1">
-                      <span>Base {fmtBps(c.baseBps)}</span>
-                      <span>Usage {fmtBps(c.utilBps)}</span>
-                      <span>Time {fmtBps(c.timeBps)}</span>
-                      <span>Credit {fmtBps(c.creditBps)}</span>
-                    </div>
-                    <div className="t-caption mt-3 flex flex-wrap gap-x-4 gap-y-1">
-                      <a className="text-accent" href={txUrl(c.txHash)} target="_blank" rel="noreferrer">
-                        Arc transaction
-                      </a>
-                      <a className="text-accent" href={`${book.data.explorer}/entity/${c.key}`} target="_blank" rel="noreferrer">
-                        Arkiv entity
-                      </a>
-                      <span>Seller {shortAddr(c.seller)}</span>
-                      <span>Held by {shortAddr(c.holder)}</span>
-                    </div>
-                  </Card>
-                </li>
-              );
-            })}
-          </ul>
-
+          <Panel title="Open claims" note={`${rows.length} open · ${fmtUsdc(total)} deployed`}>
+            <div className="overflow-x-auto">
+              <table className="tbl min-w-[860px]">
+                <thead>
+                  <tr>
+                    <th>Fund</th>
+                    <th className="r">Units</th>
+                    <th className="r">Paid</th>
+                    <th className="r">
+                      <Abbr k="NAV" />
+                    </th>
+                    <th className="r">Spread</th>
+                    <th>Pays</th>
+                    <th>Seller</th>
+                    <th>Held by</th>
+                    <th>Proof</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((c) => (
+                    <tr key={c.key}>
+                      <td className="font-semibold">{c.symbol}</td>
+                      <td className="num r">{fmtUnits(BigInt(c.amount))}</td>
+                      <td className="num r">{fmtUsdc(BigInt(c.usdcPaid), true)}</td>
+                      <td className="num r">{(Number(BigInt(c.nav) / 10n ** 14n) / 10_000).toFixed(4)}</td>
+                      <td className="num r">{((c.baseBps + c.utilBps + c.timeBps + c.creditBps) / 100).toFixed(2)}%</td>
+                      <td className="num">
+                        {fmtDate(c.settleAt)} <span className="text-muted">· {timeUntil(c.settleAt, now)}</span>
+                      </td>
+                      <td className="num text-muted">{shortAddr(c.seller)}</td>
+                      <td className="num text-muted">{shortAddr(c.holder)}</td>
+                      <td className="space-x-3">
+                        <a className="text-accent hover:underline" href={txUrl(c.txHash)} target="_blank" rel="noreferrer">
+                          Arc tx
+                        </a>
+                        <a className="text-accent hover:underline" href={`${book.data.explorer}/entity/${c.key}`} target="_blank" rel="noreferrer">
+                          Arkiv entity
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                  {rows.length === 0 && (
+                    <tr>
+                      <td colSpan={9} className="text-center text-muted">
+                        No open claims yet. Sell one and it appears here within seconds.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
           <p className="t-caption">
-            Written to Arkiv Rabdi by {book.data.writer ? <span className="t-mono">{book.data.writer}</span> : "the Earlyout writer wallet"}. Entries expire at their payout date; nothing of ours deletes them.
+            Written to Arkiv Rabdi by {book.data.writer ? <span className="t-mono">{book.data.writer}</span> : "the Earlyout writer wallet"}. Every read filters by that wallet.
           </p>
         </>
       )}

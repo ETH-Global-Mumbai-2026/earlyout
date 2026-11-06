@@ -1,52 +1,89 @@
 "use client";
 
+import { Abbr } from "./ui/Abbr";
 import type { Quote } from "@/lib/types";
 import { bpsSum } from "@/lib/types";
-import { fmtBps, fmtDate, fmtNav, fmtUsdc, timeAgo, timeUntil } from "@/lib/format";
-import { Card, Row, Spinner, Swap, VerdictPill } from "./ui/primitives";
+import { fmtBps, fmtDate, fmtUsdc, timeUntil } from "@/lib/format";
+import { Spinner, Swap, VerdictPill } from "./ui/primitives";
 import { useNow } from "@/hooks/useNow";
 import { SpreadBar, TermKey } from "./viz/SpreadBar";
 
+const TERMS = [
+  ["Base", "baseBps"],
+  ["Vault usage", "utilBps"],
+  ["Time to payout", "timeBps"],
+  ["Issuer credit", "creditBps"],
+] as const;
+
+/// The ticket's price breakdown: verdict, gross, the four terms, net, settlement facts.
 export function QuoteCard({ quote, pending, symbol }: { quote?: Quote; pending: boolean; symbol: string }) {
   const now = useNow(10_000);
   if (!quote) {
     return (
-      <Card className="flex min-h-40 items-center justify-center">
-        {pending ? <Spinner className="text-muted" /> : <span className="t-caption">Enter an amount to see the price</span>}
-      </Card>
+      <div className="flex min-h-36 items-center justify-center rounded-xl border border-hairline text-muted">
+        {pending ? <Spinner /> : <span className="t-caption">Enter an amount to see the price</span>}
+      </div>
     );
   }
   const spread = bpsSum(quote);
+  const minOut = (quote.payout * 995n) / 1000n;
   return (
-    <Card aria-busy={pending || undefined}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Swap k={`${quote.verdict}:${quote.reason}`}>
-          <VerdictPill verdict={quote.verdict} reason={quote.reason} />
-        </Swap>
-        <span className="t-caption tnum">NAV {fmtNav(quote.nav)} · {timeAgo(quote.navUpdatedAt, now)}</span>
-      </div>
-
-      <div className="mt-4">
-        <div className="t-caption">You receive now</div>
-        <Swap k={quote.payout.toString()} className="t-display tnum">
-          {fmtUsdc(quote.payout)}
-        </Swap>
-        <div className="t-caption tnum mt-1">
-          {fmtUsdc(quote.value)} at NAV, minus a {fmtBps(spread)} spread · paid in USDC on Arc
+    <div className="grid gap-3" aria-busy={pending || undefined}>
+      <Swap k={`${quote.verdict}:${quote.reason}`}>
+        <VerdictPill verdict={quote.verdict} reason={quote.reason} />
+      </Swap>
+      <div className="overflow-hidden rounded-xl border border-hairline">
+        <div className="flex justify-between border-b border-hairline px-3 py-2">
+          <span className="text-muted">
+            Gross at <Abbr k="NAV" />
+          </span>
+          <span className="num">{fmtUsdc(quote.value, true)}</span>
+        </div>
+        <div className="border-b border-hairline px-3 py-2.5">
+          <SpreadBar thin legend={false} bps={[quote.baseBps, quote.utilBps, quote.timeBps, quote.creditBps]} />
+          <div className="mt-2.5 grid gap-1">
+            {TERMS.map(([name, key], i) => (
+              <div key={name} className="flex justify-between text-[13px]">
+                <span className="text-ink-2">
+                  <TermKey i={i} />
+                  {name}
+                </span>
+                <span className="num">{fmtBps(quote[key])}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex justify-between border-b border-hairline px-3 py-2">
+          <span className="text-muted">Total spread</span>
+          <span className="num font-medium">{fmtBps(spread)}</span>
+        </div>
+        <div className="flex items-baseline justify-between bg-surface-2 px-3 py-3">
+          <span className="font-medium">You receive now</span>
+          <Swap k={quote.payout.toString()} className="num text-xl font-semibold">
+            {fmtUsdc(quote.payout, true)}
+          </Swap>
         </div>
       </div>
-
-      <SpreadBar className="mt-5" legend={false} bps={[quote.baseBps, quote.utilBps, quote.timeBps, quote.creditBps]} />
-
-      <div className="hairline-rows mt-4">
-        <Row label={<><TermKey i={0} />Base</>} hint="Covers the vault's cost of doing business" value={fmtBps(quote.baseBps)} />
-        <Row label={<><TermKey i={1} />Vault usage</>} hint="Rises as more USDC is deployed" value={fmtBps(quote.utilBps)} />
-        <Row label={<><TermKey i={2} />Time to payout</>} hint={`Pays ${fmtDate(quote.settleAt)}, in ${timeUntil(quote.settleAt, now)}`} value={fmtBps(quote.timeBps)} />
-        <Row label={<><TermKey i={3} />Issuer credit</>} hint="Risk the issuer pays late or less" value={fmtBps(quote.creditBps)} />
-        <Row label={<span className="font-semibold">Total spread</span>} value={<span className="font-semibold">{fmtBps(spread)}</span>} />
-      </div>
-
-      <div className="t-caption mt-3 tnum">Room left for {symbol} in the vault: {fmtUsdc(quote.capacityLeft)}</div>
-    </Card>
+      <dl className="grid gap-1 text-[13px]">
+        <div className="flex justify-between">
+          <dt className="text-muted">Minimum received</dt>
+          <dd className="num">{fmtUsdc(minOut, true)}</dd>
+        </div>
+        <div className="flex justify-between">
+          <dt className="text-muted">Claim pays the vault</dt>
+          <dd className="num whitespace-nowrap" title={fmtDate(quote.settleAt)}>
+            in {timeUntil(quote.settleAt, now)}
+          </dd>
+        </div>
+        <div className="flex justify-between">
+          <dt className="text-muted">Settlement</dt>
+          <dd>Same transaction</dd>
+        </div>
+        <div className="flex justify-between">
+          <dt className="text-muted">Capacity left for {symbol}</dt>
+          <dd className="num">{fmtUsdc(quote.capacityLeft)}</dd>
+        </div>
+      </dl>
+    </div>
   );
 }

@@ -2,13 +2,28 @@
 
 import { useMemo, useState } from "react";
 import { AmountInput } from "@/components/AmountInput";
-import { Button, Card, Notice, Segmented, Spinner, Stat } from "@/components/ui/primitives";
-import { errorMessage, useAccountState, useDeposit, useVault, useWallet, useWithdraw } from "@/hooks/useEarlyout";
-import { fmtUsdc, parseUnitsSafe } from "@/lib/format";
+import { Button, Notice, Panel, Segmented, Spinner } from "@/components/ui/primitives";
 import { Allocation } from "@/components/viz/Allocation";
+import { AppHeader } from "@/components/AppHeader";
+import { errorMessage, useAccountState, useDeposit, useFunds, useVault, useWallet, useWithdraw } from "@/hooks/useEarlyout";
+import { useBook } from "@/hooks/useBook";
+import { addresses } from "@/lib/addresses";
+import { fmtDate, fmtUnits, fmtUsdc, parseUnitsSafe } from "@/lib/format";
+
+function Figure({ label, value, note, tone }: { label: string; value: string; note?: string; tone?: string }) {
+  return (
+    <div className="min-w-0 px-4 py-3">
+      <div className="t-eyebrow">{label}</div>
+      <div className={`num mt-1 text-lg font-semibold ${tone ?? ""}`}>{value}</div>
+      {note && <div className="t-caption mt-0.5">{note}</div>}
+    </div>
+  );
+}
 
 export default function VaultPage() {
   const vault = useVault();
+  const funds = useFunds();
+  const book = useBook();
   const account = useAccountState();
   const wallet = useWallet();
   const [mode, setMode] = useState<"deposit" | "withdraw">("deposit");
@@ -17,7 +32,10 @@ export default function VaultPage() {
   const withdraw = useWithdraw();
   const amount = useMemo(() => parseUnitsSafe(text, 6), [text]);
   const busy = deposit.isPending || withdraw.isPending;
-  const paused = mode === "deposit" ? account.data?.maxDeposit === 0n : account.data !== undefined && account.data.shares > 0n && account.data.maxWithdraw === 0n && account.data.sharesValue > 0n;
+  const paused =
+    mode === "deposit"
+      ? account.data?.maxDeposit === 0n
+      : account.data !== undefined && account.data.shares > 0n && account.data.maxWithdraw === 0n && account.data.sharesValue > 0n;
   const max = mode === "deposit" ? account.data?.usdc : account.data?.maxWithdraw;
   const over = amount !== null && max !== undefined && amount > max;
   const can = amount !== null && amount > 0n && !over && wallet.isConnected && !busy && !paused;
@@ -31,36 +49,98 @@ export default function VaultPage() {
   }
 
   const v = vault.data;
-  const pct = v && v.totalAssets > 0n ? Number((v.deployed * 1000n) / v.totalAssets) / 10 : 0;
+  const util = v && v.totalAssets > 0n ? Number((v.deployed * 10000n) / v.totalAssets) / 100 : 0;
+  const positions = (book.data?.claims ?? []).filter((c) => !addresses.vault || c.holder.toLowerCase() === addresses.vault.toLowerCase() || book.data?.source === "mock");
 
   return (
-    <div className="space-y-5">
-      <header>
-        <div className="t-eyebrow">03 · Vault</div>
-        <h1 className="t-display mt-2">Vault</h1>
-        <p className="t-body mt-2 text-muted">LPs fund the vault in USDC and earn the spread. Claims are held at cost until they pay.</p>
-      </header>
+    <div className="grid gap-4">
+      <AppHeader title="Vault">
+        Provide USDC and earn the spread on every claim the vault buys. Claims are held at cost until they pay; withdrawals come from idle USDC.
+      </AppHeader>
 
       {vault.isPending && (
-        <div className="flex justify-center py-10">
-          <Spinner className="text-muted" />
+        <div className="flex justify-center py-10 text-muted">
+          <Spinner />
         </div>
       )}
       {vault.isError && <Notice tone="error">Could not load the vault: {errorMessage(vault.error)}</Notice>}
 
       {v && (
-        <Card className="grid grid-cols-2 gap-5 sm:grid-cols-4">
-          <Stat label="Share price" value={fmtUsdc(v.sharePrice, true)} hint="USDC per share" />
-          <Stat label="Total assets" value={fmtUsdc(v.totalAssets)} />
-          <Stat label="Idle USDC" value={fmtUsdc(v.idle)} hint="Available to buy claims" />
-          <Stat label="In claims" value={fmtUsdc(v.deployed)} hint={`${pct}% deployed`} />
-          <Allocation className="col-span-2 sm:col-span-4" idle={v.idle} deployed={v.deployed} />
-        </Card>
+        <section className="card grid grid-cols-2 divide-hairline overflow-hidden sm:grid-cols-5 sm:divide-x [&>*]:border-b [&>*]:border-hairline sm:[&>*]:border-b-0">
+          <Figure label="Share price" value={fmtUsdc(v.sharePrice, true)} note="USDC per share" />
+          <Figure label="Total assets" value={fmtUsdc(v.totalAssets)} />
+          <Figure label="Idle USDC" value={fmtUsdc(v.idle)} note="Available to buy claims" />
+          <Figure label="In claims" value={fmtUsdc(v.deployed)} note="At cost" />
+          <Figure label="Utilisation" value={`${util.toFixed(1)}%`} note="Raises the usage term" />
+        </section>
       )}
 
-      <Card className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="t-headline">Your position</h2>
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="grid min-w-0 gap-4">
+          <Panel title="Positions" note="Claims the vault holds, from the Arkiv book">
+            <div className="overflow-x-auto">
+              <table className="tbl min-w-[560px]">
+                <thead>
+                  <tr>
+                    <th>Fund</th>
+                    <th className="r">Units</th>
+                    <th className="r">Cost</th>
+                    <th className="r">Spread</th>
+                    <th>Pays</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {positions.map((c) => (
+                    <tr key={c.key}>
+                      <td className="font-semibold">{c.symbol}</td>
+                      <td className="num r">{fmtUnits(BigInt(c.amount))}</td>
+                      <td className="num r">{fmtUsdc(BigInt(c.usdcPaid), true)}</td>
+                      <td className="num r">{((c.baseBps + c.utilBps + c.timeBps + c.creditBps) / 100).toFixed(2)}%</td>
+                      <td className="num">{fmtDate(c.settleAt)}</td>
+                      <td>
+                        <span className="badge bg-buy-soft text-buy">
+                          <span className="badge-dot" />
+                          Performing
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {positions.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="text-center text-muted">
+                        {book.isPending ? "Reading the book" : "No open positions"}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
+          {v && funds.data && (
+            <Panel title="Allocation and exposure" bodyClassName="grid gap-5 p-4">
+              <Allocation idle={v.idle} deployed={v.deployed} />
+              <div className="grid gap-2.5">
+                {funds.data.map((f) => {
+                  const pct = f.capUsdc > 0n ? Math.min(100, Number((f.deployedUsdc * 10000n) / f.capUsdc) / 100) : 0;
+                  return (
+                    <div key={f.address} className="grid grid-cols-[5.5rem_1fr_auto] items-center gap-3 text-[13px]">
+                      <span className="font-medium">{f.symbol}</span>
+                      <div className="h-1.5 rounded-full bg-viz-track" role="meter" aria-label={`${f.symbol} exposure`} aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+                        <div className="h-1.5 rounded-full bg-accent" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="num text-muted">
+                        {fmtUsdc(f.deployedUsdc)} of {fmtUsdc(f.capUsdc)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </Panel>
+          )}
+        </div>
+
+        <Panel title="Liquidity ticket" bodyClassName="grid gap-4 p-4">
           <Segmented
             label="Action"
             value={mode}
@@ -73,25 +153,32 @@ export default function VaultPage() {
               { value: "withdraw", label: "Withdraw" },
             ]}
           />
-        </div>
-        {account.data && (
-          <div className="grid grid-cols-2 gap-5">
-            <Stat label="Your shares are worth" value={fmtUsdc(account.data.sharesValue)} />
-            <Stat label="Withdrawable now" value={fmtUsdc(account.data.maxWithdraw)} hint="Limited to idle USDC" />
-          </div>
-        )}
-        <AmountInput value={text} onChange={setText} unit="USDC" decimals={6} balance={max} label={mode === "deposit" ? "Deposit" : "Withdraw"} />
-        {paused && (
-          <Notice tone="warn">
-            LP {mode === "deposit" ? "deposits" : "withdrawals"} are paused until the fund writedown is marked on the Status screen. This stops anyone trading ahead of it.
-          </Notice>
-        )}
-        {over && <Notice tone="warn">{mode === "deposit" ? "More USDC than you hold." : "More than can be withdrawn right now."}</Notice>}
-        {err && <Notice tone="error">{errorMessage(err)}</Notice>}
-        <Button size="lg" className="w-full" onClick={go} disabled={!can} loading={busy}>
-          {!wallet.isConnected ? "Connect a wallet" : mode === "deposit" ? "Deposit USDC" : "Withdraw USDC"}
-        </Button>
-      </Card>
+          {account.data && (
+            <dl className="grid gap-1 text-[13px]">
+              <div className="flex justify-between">
+                <dt className="text-muted">Your shares are worth</dt>
+                <dd className="num">{fmtUsdc(account.data.sharesValue)}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted">Withdrawable now</dt>
+                <dd className="num">{fmtUsdc(account.data.maxWithdraw)}</dd>
+              </div>
+            </dl>
+          )}
+          <AmountInput value={text} onChange={setText} unit="USDC" decimals={6} balance={max} label={mode === "deposit" ? "Deposit" : "Withdraw"} />
+          {paused && (
+            <Notice tone="warn">
+              Liquidity provider (LP) {mode === "deposit" ? "deposits" : "withdrawals"} are paused until the fund writedown is marked on the Risk screen.
+            </Notice>
+          )}
+          {over && <Notice tone="warn">{mode === "deposit" ? "More USDC than you hold." : "More than can be withdrawn right now."}</Notice>}
+          {err && <Notice tone="error">{errorMessage(err)}</Notice>}
+          <Button size="lg" className="w-full" onClick={go} disabled={!can} loading={busy}>
+            {!wallet.isConnected ? "Connect a wallet" : mode === "deposit" ? "Deposit USDC" : "Withdraw USDC"}
+          </Button>
+          <p className="t-caption">Withdrawals are limited to idle USDC and pause while an issuer failure is unmarked.</p>
+        </Panel>
+      </div>
     </div>
   );
 }
