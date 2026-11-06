@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { CTA, DataRows, Grid, PageHeader, Section, Tile } from "@/components/site/blocks";
+import { SpreadCurve } from "@/components/viz/SpreadCurve";
 
 export const metadata: Metadata = { title: "How it works" };
 
@@ -43,7 +44,8 @@ export default function HowItWorks() {
         </Grid>
       </Section>
       <Section eyebrow="Pricing" title="Four terms, all on screen." lede="The seller receives NAV × amount × (1 minus the spread).">
-        <div className="card max-w-3xl p-6">
+        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="card p-6">
           <DataRows
             rows={[
               ["Base", "50 bps", "fixed, set in FundRegistry"],
@@ -52,6 +54,11 @@ export default function HowItWorks() {
               ["Credit", "150 bps", "per fund, set in FundRegistry"],
             ]}
           />
+        </div>
+        <div className="card p-6">
+          <div className="t-eyebrow">ACRED terms, empty vault</div>
+          <SpreadCurve className="mt-4" baseBps={50} utilBps={0} creditBps={150} volBps={800} marks={[{ days: 90, label: "90 days" }]} />
+        </div>
         </div>
       </Section>
       <Section eyebrow="Safety rules" title="What the contracts refuse to do.">
@@ -73,8 +80,8 @@ export default function HowItWorks() {
           {faq.map(([q, a]) => (
             <details key={q} className="group py-4">
               <summary className="t-headline cursor-pointer list-none">
-                <span className="mr-3 font-mono text-accent group-open:hidden">+</span>
-                <span className="mr-3 hidden font-mono text-accent group-open:inline">−</span>
+                <span className="mr-3 font-semibold text-accent group-open:hidden">+</span>
+                <span className="mr-3 hidden font-semibold text-accent group-open:inline">−</span>
                 {q}
               </summary>
               <p className="t-body mt-3 pl-7 text-muted">{a}</p>
