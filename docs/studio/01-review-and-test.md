@@ -1,0 +1,13 @@
+Project: Earlyout, early exit for tokenized funds that redeem on a schedule. Solidity 0.8.28, Foundry, OpenZeppelin v5. The contracts, tests and deploy script are already in this workspace under contracts/, contracts/test/ and contracts/script/ (sent with this turn). Reference files in context/: spec.md (the design) and abi.ts (the exact interface the web app and indexer consume; do not change any function or event signature in it).
+
+What the contracts do: a holder deposits a fund token into ClaimWrapper, which files a redemption with IssuerStub and mints an ERC-1155 claim (ClaimToken) for that fund and payout date. The holder sells the claim to Vault (ERC-4626 over Arc USDC at 0x3600000000000000000000000000000000000000, 6 decimals) at NAV minus a four-term spread. NavOracle receives NAV and issuer status as Chainlink CRE reports (IReceiver.onReport, only from the forwarder). If the issuer fails, trading halts and markImpaired writes the fund's claims down inside totalAssets so every LP's share price drops in one transaction.
+
+Do these, in order, max preset:
+
+1. Install OpenZeppelin contracts v5.7.0 so the @openzeppelin/contracts/ imports resolve (lib/ plus a remapping in foundry.toml, keeping src = "contracts", test = "contracts/test", script = "contracts/script"). forge-std is already in lib/.
+2. Run forge build and forge test. All 50 tests must pass. If anything fails because of path or remapping differences from the original layout, fix the imports; do not change contract logic to make a test pass.
+3. Security review of all seven contracts with your contract scan, focusing on: reentrancy in Vault.sell/buy/settle, the ERC-4626 share inflation path (virtual offset 6, seeded at deploy), totalAssets accounting of claims at cost and the impairment writedown, access control (owner, forwarder, wrapper-only mint/burn), allowlist enforcement on FundToken and ClaimToken transfers, integer rounding in quote/quoteFund and ClaimWrapper.redeem, and the NavOracle timestamp rule (equal updatedAt accepted so a status change can land between NAV updates; older rejected). Fix anything High or Medium. For Low or informational findings, do not change code; list them.
+4. Add tests for any fix you make, keep forge test green, and write a short docs/studio-review.md in the workspace with: findings by severity, what you changed and why, and what you left as is.
+5. Do not deploy in this turn. Report the address of this workspace's deployer wallet (the one Studio would deploy from on Arc Testnet) so we can fund it with test USDC; never print its private key.
+
+Report back: test count and result, the review summary, the deployer address, and the list of files you changed.

