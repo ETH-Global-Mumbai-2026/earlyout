@@ -22,3 +22,22 @@ build/
 .DS_Store
 .vscode/
 .idea/
+
+# Playwright
+test-results/
+playwright-report/
+
+# CRE build output
+cre/**/binary.wasm
+cre/**/wasm/
+
+# Foundry libraries: run `forge install` in contracts/ (see contracts/README.md)
+contracts/lib/
+
+# Vercel
+.vercel/
+web/.vercel/
+
+# Foundry broadcast logs (the live deployment record is contracts/deployments/ and docs/studio/)
+contracts/broadcast/
+cre/**/.cre_build_tmp.js
