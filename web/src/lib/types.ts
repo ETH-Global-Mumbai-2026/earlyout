@@ -41,6 +41,8 @@ export type VaultState = {
   sharePrice: bigint; // USDC per whole share, 6dp
   totalSupply: bigint;
   shareDecimals: number;
+  baseBps: number; // FundRegistry globals: the vault-wide spread terms
+  utilSlopeBps: number;
 };
 
 export type Account = {

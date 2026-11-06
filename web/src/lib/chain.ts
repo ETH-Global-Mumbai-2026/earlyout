@@ -8,14 +8,17 @@ export const arcTestnet = defineChain({
   nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
   rpcUrls: { default: { http: [process.env.NEXT_PUBLIC_ARC_RPC ?? "https://rpc.testnet.arc.io"] } },
   blockExplorers: { default: { name: "Arc Explorer", url: "https://explorer.testnet.arc.io" } },
+  contracts: { multicall3: { address: "0xcA11bde05977b3631167028862bE2a173976CA11" } },
   testnet: true,
 });
 
 export const wagmiConfig = createConfig({
   chains: [arcTestnet],
   connectors: [injected()],
-  // Batch reads into one JSON-RPC request per tick: Arc's public RPC rate-limits bursts.
-  transports: { [arcTestnet.id]: http(undefined, { batch: { wait: 25, batchSize: 50 }, retryCount: 3, retryDelay: 400 }) },
+  // Arc's public RPC rate-limits bursts and caps batch size. Contract reads in the
+  // same tick fold into one Multicall3 call; the rest go out in small JSON-RPC batches.
+  batch: { multicall: { wait: 25 } },
+  transports: { [arcTestnet.id]: http(undefined, { batch: { wait: 25, batchSize: 10 }, retryCount: 3, retryDelay: 400 }) },
   ssr: true,
 });
 

@@ -128,6 +128,8 @@ export const mockSource: Source = {
       sharePrice: state.totalSupply === 0n ? 1_000_000n : (ta * 10n ** 9n) / state.totalSupply,
       totalSupply: state.totalSupply,
       shareDecimals: 9,
+      baseBps: state.baseBps,
+      utilSlopeBps: state.utilSlopeBps,
     };
   },
   async account(address): Promise<Account> {

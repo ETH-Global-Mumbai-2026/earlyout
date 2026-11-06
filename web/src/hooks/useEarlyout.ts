@@ -15,7 +15,7 @@ export function useWallet() {
 }
 
 export function useFunds() {
-  return useQuery({ queryKey: ["funds"], queryFn: () => source.funds(), refetchInterval: 15_000 });
+  return useQuery({ queryKey: ["funds"], queryFn: () => source.funds(), refetchInterval: 60_000 });
 }
 
 export function useQuote(fund: Address | undefined, amount: bigint | null) {
@@ -23,13 +23,13 @@ export function useQuote(fund: Address | undefined, amount: bigint | null) {
     queryKey: ["quote", fund, amount?.toString()],
     queryFn: () => source.quote(fund!, amount!),
     enabled: !!fund && amount !== null,
-    refetchInterval: 10_000,
+    refetchInterval: 30_000,
     placeholderData: (prev) => prev,
   });
 }
 
 export function useVault() {
-  return useQuery({ queryKey: ["vault"], queryFn: () => source.vault(), refetchInterval: 15_000 });
+  return useQuery({ queryKey: ["vault"], queryFn: () => source.vault(), refetchInterval: 60_000 });
 }
 
 export function useAccountState() {
@@ -38,12 +38,12 @@ export function useAccountState() {
     queryKey: ["account", address],
     queryFn: () => source.account(address!),
     enabled: !!address,
-    refetchInterval: 15_000,
+    refetchInterval: 30_000,
   });
 }
 
 export function useIssuerFailed() {
-  return useQuery({ queryKey: ["issuerFailed"], queryFn: () => source.issuerFailed(), refetchInterval: 10_000 });
+  return useQuery({ queryKey: ["issuerFailed"], queryFn: () => source.issuerFailed(), refetchInterval: 20_000 });
 }
 
 function useInvalidateAll() {

@@ -3,11 +3,10 @@ import { decodeEventLog, erc20Abi as viemErc20, maxUint256 } from "viem";
 import { getAccount, readContract, switchChain, waitForTransactionReceipt, writeContract } from "wagmi/actions";
 import { arcTestnet, USDC_ADDRESS, wagmiConfig } from "../chain";
 import { addresses } from "../addresses";
-import { erc20Abi, issuerAbi, oracleAbi, registryAbi, vaultAbi, wrapperAbi } from "../abi";
-import type { Account, Fund, Quote, Receipt, Source, VaultState, Verdict } from "../types";
-import { roundUpToWindow } from "../types";
+import { issuerAbi, vaultAbi, wrapperAbi } from "../abi";
+import type { Account, Fund, Quote, Receipt, Source, VaultState } from "../types";
+import { fromWire } from "../wire";
 
-const VERDICTS: Verdict[] = ["BUY", "REFUSE", "HALT"];
 const cfg = wagmiConfig;
 const chainId = arcTestnet.id;
 
@@ -28,6 +27,7 @@ async function send(write: () => Promise<Hex>): Promise<Hex> {
   const hash = await write();
   const receipt = await waitForTransactionReceipt(cfg, { hash, chainId });
   if (receipt.status !== "success") throw new Error("Transaction reverted");
+  bustNext = true;
   return hash;
 }
 
@@ -40,38 +40,42 @@ async function ensureAllowance(token: Address, owner: Address, spender: Address,
 
 let termsCache: Map<Address, { settlementDelay: number; window: number }> | null = null;
 
+// Reads come from our own API (one cached multicall shared by every visitor),
+// so the browser does not call Arc's public RPC for them. After a write the next
+// read skips the caches so the result shows at once.
+let bustNext = false;
+let inflight: { at: number; p: Promise<{ funds: Fund[]; vault: VaultState }> } | null = null;
+
+async function getJson<T>(url: string): Promise<T> {
+  const res = await fetch(url, { cache: "no-store" });
+  const text = await res.text();
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try {
+      msg = (JSON.parse(text) as { error?: string }).error ?? msg;
+    } catch {}
+    throw new Error(msg);
+  }
+  return fromWire<T>(text);
+}
+
+function loadState() {
+  if (inflight && Date.now() - inflight.at < 2000 && !bustNext) return inflight.p;
+  const url = bustNext ? `/api/state?fresh=${Date.now()}` : "/api/state";
+  bustNext = false;
+  const p = getJson<{ funds: Fund[]; vault: VaultState }>(url).then((s) => {
+    termsCache = new Map(s.funds.map((f) => [f.address, { settlementDelay: f.settlementDelay, window: f.window }]));
+    return s;
+  });
+  inflight = { at: Date.now(), p };
+  p.catch(() => {
+    if (inflight?.p === p) inflight = null;
+  });
+  return p;
+}
+
 async function loadFunds(): Promise<Fund[]> {
-  const list = await readContract(cfg, { chainId,  address: addresses.registry, abi: registryAbi, functionName: "funds" });
-  const funds = await Promise.all(
-    list.map(async (address): Promise<Fund> => {
-      const [terms, nav, impaired, cost, name, symbol] = await Promise.all([
-        readContract(cfg, { chainId,  address: addresses.registry, abi: registryAbi, functionName: "getTerms", args: [address] }),
-        readContract(cfg, { chainId,  address: addresses.oracle, abi: oracleAbi, functionName: "getNav", args: [address] }),
-        readContract(cfg, { chainId,  address: addresses.vault, abi: vaultAbi, functionName: "impaired", args: [address] }),
-        readContract(cfg, { chainId,  address: addresses.vault, abi: vaultAbi, functionName: "fundCost", args: [address] }),
-        readContract(cfg, { chainId,  address, abi: erc20Abi, functionName: "name" }),
-        readContract(cfg, { chainId,  address, abi: erc20Abi, functionName: "symbol" }),
-      ]);
-      return {
-        address,
-        symbol,
-        name,
-        nav: nav[0],
-        navUpdatedAt: Number(nav[1]),
-        status: nav[2] === 1 ? 1 : 0,
-        impaired,
-        settlementDelay: Number(terms.settlementDelay),
-        window: Number(terms.window),
-        maxAge: Number(terms.maxAge),
-        capUsdc: terms.exposureCapUsdc,
-        deployedUsdc: cost,
-        volBps: Number(terms.volBps),
-        creditBps: Number(terms.creditBps),
-      };
-    }),
-  );
-  termsCache = new Map(funds.map((f) => [f.address, { settlementDelay: f.settlementDelay, window: f.window }]));
-  return funds;
+  return (await loadState()).funds;
 }
 
 export const chainSource: Source = {
@@ -79,37 +83,11 @@ export const chainSource: Source = {
   funds: loadFunds,
 
   async quote(fund, amount): Promise<Quote> {
-    if (!termsCache?.has(fund)) await loadFunds();
-    const t = termsCache!.get(fund)!;
-    const q = await readContract(cfg, { chainId,  address: addresses.vault, abi: vaultAbi, functionName: "quoteFund", args: [fund, amount] });
-    const now = Math.floor(Date.now() / 1000);
-    return {
-      verdict: VERDICTS[q.verdict] ?? "HALT",
-      reason: q.reason,
-      nav: q.nav,
-      navUpdatedAt: Number(q.navUpdatedAt),
-      baseBps: q.baseBps,
-      utilBps: q.utilBps,
-      timeBps: q.timeBps,
-      creditBps: q.creditBps,
-      payout: q.payout,
-      capacityLeft: q.capacityLeft,
-      settleAt: roundUpToWindow(now + t.settlementDelay, t.window),
-      value: (amount * q.nav) / 10n ** 30n,
-    };
+    return getJson<Quote>(`/api/quote?fund=${fund}&amount=${amount}`);
   },
 
   async vault(): Promise<VaultState> {
-    const v = addresses.vault;
-    const [totalAssets, deployed, totalSupply, decimals, idle] = await Promise.all([
-      readContract(cfg, { chainId,  address: v, abi: vaultAbi, functionName: "totalAssets" }),
-      readContract(cfg, { chainId,  address: v, abi: vaultAbi, functionName: "deployedUsdc" }),
-      readContract(cfg, { chainId,  address: v, abi: vaultAbi, functionName: "totalSupply" }),
-      readContract(cfg, { chainId,  address: v, abi: vaultAbi, functionName: "decimals" }),
-      readContract(cfg, { chainId,  address: USDC_ADDRESS, abi: viemErc20, functionName: "balanceOf", args: [v] }),
-    ]);
-    const sharePrice = await readContract(cfg, { chainId,  address: v, abi: vaultAbi, functionName: "convertToAssets", args: [10n ** BigInt(decimals)] });
-    return { totalAssets, idle, deployed, sharePrice, totalSupply, shareDecimals: decimals };
+    return (await loadState()).vault;
   },
 
   async account(address): Promise<Account> {
