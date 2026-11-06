@@ -1,17 +1,15 @@
 "use client";
 
 import { useFunds, useQuote } from "@/hooks/useEarlyout";
-import { fmtBps, fmtNav, fmtUsdc } from "@/lib/format";
-import { bpsSum } from "@/lib/types";
 import { useNow } from "@/hooks/useNow";
-import { SpreadBar } from "../viz/SpreadBar";
+import { fmtBps, fmtDate, fmtNav, fmtUsdc } from "@/lib/format";
+import { Badge } from "../ui/primitives";
 import { SpreadCurve } from "../viz/SpreadCurve";
-import { VerdictPill } from "../ui/primitives";
+import { TermKey } from "../viz/SpreadBar";
 
-const PROBE = 10n ** 15n; // 0.001 of a unit: small enough to fit the testnet vault
+const PROBE = 10n ** 15n; // 0.001 of a unit, scaled to a per-unit price
 
-/// The hero's right side: a real quote for the 90-day ACRED claim, read from the
-/// Vault contract on Arc, with the spread broken down and plotted against time.
+/// A real quote for the 90-day ACRED claim, read from the Vault contract on Arc.
 export function LiveQuoteCard() {
   const funds = useFunds();
   const fund = funds.data?.[0];
@@ -19,41 +17,50 @@ export function LiveQuoteCard() {
   const now = useNow();
   const q = quote.data;
   const days = q ? Math.max(0, Math.round((q.settleAt - now) / 86400)) : 90;
-  const perUnit = q ? q.payout * 1000n : 0n;
+  const verdict = q?.verdict;
 
   return (
-    <div className="card material w-full max-w-md p-5 shadow-2xl sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
-          <div className="t-eyebrow">Live quote · Arc testnet</div>
-          <div className="t-headline mt-1">{fund ? `${fund.symbol}, pays in ${days} days` : "Reading the vault"}</div>
-        </div>
-        {q && <VerdictPill verdict={q.verdict} reason={q.verdict === "BUY" ? "" : q.reason} />}
-      </div>
-      <div className="mt-4 flex items-end justify-between gap-4">
+    <div className="card p-5 shadow-[0_24px_48px_-16px_rgba(16,24,40,0.16)]">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="t-caption">You receive per unit</div>
-          <div className="text-[34px] font-semibold leading-none tracking-[-0.02em]">{q ? fmtUsdc(perUnit) : "…"}</div>
+          <div className="font-semibold">Quote · {fund?.symbol ?? "ACRED"}</div>
+          <div className="t-caption">{q ? `1 unit · pays ${fmtDate(q.settleAt).split(",")[0]} · read from the vault on Arc` : "Reading the vault on Arc"}</div>
         </div>
-        {q && (
-          <div className="text-right">
-            <div className="t-caption">NAV {fmtNav(q.nav)}</div>
-            <div className="text-[15px] font-medium tnum">−{fmtBps(bpsSum(q))} spread</div>
-          </div>
+        {verdict && (
+          <Badge tone={verdict === "BUY" ? "good" : verdict === "REFUSE" ? "warn" : "bad"}>
+            <span className="badge-dot" />
+            {verdict === "BUY" ? "Approved" : verdict === "REFUSE" ? "Refused" : "Halted"}
+          </Badge>
         )}
       </div>
-      {q && <SpreadBar className="mt-5" bps={[q.baseBps, q.utilBps, q.timeBps, q.creditBps]} />}
+      <div className="mt-4 overflow-hidden rounded-md border border-hairline text-[13px]">
+        <div className="flex justify-between border-b border-hairline px-3.5 py-2.5">
+          <span className="text-muted">NAV per unit</span>
+          <span className="tnum">{q ? fmtNav(q.nav) : "…"}</span>
+        </div>
+        {(
+          [
+            ["Base", q?.baseBps],
+            ["Vault usage", q?.utilBps],
+            [`Time to payout, ${days} days`, q?.timeBps],
+            ["Issuer credit", q?.creditBps],
+          ] as const
+        ).map(([name, bps], i) => (
+          <div key={i} className="flex justify-between border-b border-hairline px-3.5 py-2.5">
+            <span className="text-muted">
+              <TermKey i={i} />
+              {name}
+            </span>
+            <span className="tnum">{bps === undefined ? "…" : fmtBps(bps)}</span>
+          </div>
+        ))}
+        <div className="flex items-baseline justify-between bg-surface-2 px-3.5 py-3">
+          <span className="font-medium">Proceeds per unit</span>
+          <span className="text-xl font-semibold">{q ? fmtUsdc(q.payout * 1000n) : "…"}</span>
+        </div>
+      </div>
       {fund && q && (
-        <SpreadCurve
-          className="mt-4"
-          height={150}
-          baseBps={q.baseBps}
-          utilBps={q.utilBps}
-          creditBps={fund.creditBps}
-          volBps={fund.volBps}
-          maxDays={180}
-          marks={[{ days, label: `${days} days` }]}
-        />
+        <SpreadCurve className="mt-4" height={140} baseBps={q.baseBps} utilBps={q.utilBps} creditBps={fund.creditBps} volBps={fund.volBps} maxDays={180} marks={[{ days, label: `${days} days` }]} />
       )}
     </div>
   );
