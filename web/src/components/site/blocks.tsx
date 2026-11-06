@@ -11,7 +11,7 @@ export function Container({ children, className }: { children: ReactNode; classN
 /// Sections alternate white and Apple's light grey; headings reveal on scroll.
 export function Section({ id, eyebrow, title, lede, children, className, tint, center }: { id?: string; eyebrow?: string; title?: ReactNode; lede?: ReactNode; children?: ReactNode; className?: string; tint?: boolean; center?: boolean }) {
   return (
-    <section id={id} className={cn("py-14 sm:py-20", tint && "border-y border-hairline/50 bg-surface/30", className)}>
+    <section id={id} className={cn("py-14 sm:py-20", tint && "border-y border-hairline bg-surface-2", className)}>
       <Container>
         <Reveal className={cn(center && "mx-auto max-w-3xl text-center")}>
           {eyebrow && <div className="text-[15px] font-semibold text-accent">{eyebrow}</div>}

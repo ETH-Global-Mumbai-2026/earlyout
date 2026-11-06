@@ -123,7 +123,7 @@ export default function VaultPage() {
           {v && funds.data && (
             <Panel title="Allocation and exposure" bodyClassName="grid gap-6 p-5 sm:grid-cols-[auto_1fr] sm:items-center">
               <div className="flex items-center gap-5">
-                <Ring value={Number(v.deployed)} max={Number(v.idle + v.deployed)} size={112} stroke={13} color="var(--color-viz-3)" label={`Deployed ${util.toFixed(1)}% of the vault`}>
+                <Ring value={Number(v.deployed)} max={Number(v.idle + v.deployed)} size={112} stroke={13} color="var(--color-accent)" label={`Deployed ${util.toFixed(1)}% of the vault`}>
                   <span>
                     <span className="num block text-[22px] font-bold leading-none">{util.toFixed(1)}%</span>
                     <span className="t-caption">deployed</span>

@@ -18,11 +18,11 @@ function statusOf(f: Fund, now: number): { tone: "good" | "warn" | "bad"; label:
   return null;
 }
 
-const ICON: Record<string, string> = { ACRED: "#007aff", ACREDd: "#5856d6" };
+const ICON: Record<string, string> = { ACRED: "var(--color-accent)", ACREDd: "var(--color-brand-2)" };
 
 function FundIcon({ f, muted }: { f: Fund; muted?: boolean }) {
   return (
-    <span aria-hidden className="ios-icon" style={{ background: muted ? "#aeaeb2" : (ICON[f.symbol] ?? "#007aff") }}>
+    <span aria-hidden className="ios-icon" style={{ background: muted ? "var(--color-faint)" : (ICON[f.symbol] ?? "var(--color-accent)") }}>
       {f.symbol.slice(0, 1)}
     </span>
   );

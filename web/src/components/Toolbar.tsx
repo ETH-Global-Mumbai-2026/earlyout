@@ -47,7 +47,7 @@ function Tabs({ id, className, itemClass }: { id: string; className: string; ite
             {active && (
               <motion.span
                 layoutId={id}
-                className="absolute inset-0 rounded-[7px] bg-surface shadow-[0_3px_8px_rgba(0,0,0,0.12),0_3px_1px_rgba(0,0,0,0.04)] dark:bg-[oklch(0.44_0.01_264)]"
+                className="absolute inset-0 rounded-[7px] bg-surface shadow-[0_3px_8px_rgba(0,0,0,0.12),0_3px_1px_rgba(0,0,0,0.04)] dark:bg-[#2a3756]"
                 transition={reduce ? { duration: 0 } : { type: "spring", bounce: 0, duration: 0.35 }}
               />
             )}

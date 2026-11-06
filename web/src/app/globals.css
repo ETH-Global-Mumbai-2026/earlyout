@@ -13,29 +13,31 @@
   --font-sans: var(--font-averta), -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 
-  /* iOS system palette, light. Grouped background, white grouped cells,
-     system separators and system blue; status colours darkened for text contrast. */
-  --color-canvas: #f2f2f7; /* systemGroupedBackground */
-  --color-surface: #ffffff; /* secondarySystemGroupedBackground */
-  --color-surface-2: #f9f9fb;
-  --color-sunk: #e9e9ee; /* tertiary fill, segmented track */
-  --color-ink: #1c1c1e; /* label */
-  --color-ink-2: #3c3c43; /* secondary label, full strength */
-  --color-muted: #6c6c70; /* secondary label at 60% on white */
-  --color-faint: #aeaeb2; /* tertiary label */
-  --color-hairline: #e2e2e7; /* separator */
-  --color-line-strong: #c7c7cc; /* opaque separator, input borders */
+  /* Earlyout palette, light: navy from the mark, one signal blue for every
+     action, cool grey neutrals; green, amber and red mean BUY, REFUSE, HALT only. */
+  --color-canvas: #f4f6fa;
+  --color-surface: #ffffff;
+  --color-surface-2: #f8fafc;
+  --color-sunk: #e9edf4;
+  --color-ink: #0f172a;
+  --color-ink-2: #334155;
+  --color-muted: #5b6475;
+  --color-faint: #98a2b3;
+  --color-hairline: #e3e8ef;
+  --color-line-strong: #cbd3df;
   --color-brand: #0b2545;
-  --color-accent: #007aff; /* systemBlue */
+  --color-brand-2: #1e3a8a;
+  --color-accent: #2563eb;
   --color-accent-ink: #ffffff;
-  --color-accent-soft: #e5f1ff;
-  --color-buy: #248a3d; /* systemGreen, text weight */
-  --color-refuse: #c93400; /* systemOrange, text weight */
-  --color-halt: #d70015; /* systemRed, text weight */
-  --color-buy-soft: #e3f6e8;
-  --color-refuse-soft: #fff1e0;
-  --color-halt-soft: #ffe8ea;
-  --color-dot-buy: #34c759;
+  --color-accent-soft: #e8eefb;
+  --color-buy: #1f7a4d;
+  --color-refuse: #a15c00;
+  --color-halt: #b42318;
+  --color-buy-soft: #e7f4ec;
+  --color-refuse-soft: #fbf1e2;
+  --color-halt-soft: #fbeae8;
+  --color-dot-buy: #1f9d5c;
+  --color-chainlink: #375bd2;
 
   /* Spread terms: a validated categorical palette, fixed order
      (1 base, 2 vault usage, 3 time to payout, 4 issuer credit).
@@ -60,25 +62,27 @@
    grouped cells still read as raised. iOS system colours use their dark variants. */
 .dark {
   color-scheme: dark;
-  --color-canvas: oklch(0.178 0.006 264);
-  --color-surface: oklch(0.226 0.008 264);
-  --color-surface-2: oklch(0.25 0.009 264);
-  --color-sunk: oklch(0.3 0.01 264);
-  --color-ink: oklch(0.968 0.003 264);
-  --color-ink-2: oklch(0.86 0.006 264);
-  --color-muted: oklch(0.722 0.01 264);
-  --color-faint: oklch(0.566 0.01 264);
-  --color-hairline: oklch(0.31 0.01 264);
-  --color-line-strong: oklch(0.39 0.011 264);
-  --color-accent: #0a84ff;
-  --color-accent-soft: oklch(0.3 0.06 260);
-  --color-buy: #30d158;
-  --color-refuse: #ff9f0a;
-  --color-halt: #ff453a;
-  --color-buy-soft: oklch(0.29 0.05 152);
-  --color-refuse-soft: oklch(0.3 0.055 70);
-  --color-halt-soft: oklch(0.3 0.065 25);
-  --color-dot-buy: #30d158;
+  --color-canvas: #0a1020;
+  --color-surface: #111a2e;
+  --color-surface-2: #15203a;
+  --color-sunk: #1c2842;
+  --color-ink: #e6eaf2;
+  --color-ink-2: #c3cad8;
+  --color-muted: #8c96aa;
+  --color-faint: #5e6880;
+  --color-hairline: #1f2b44;
+  --color-line-strong: #2c3a57;
+  --color-brand-2: #3b5ba9;
+  --color-accent: #5b8def;
+  --color-accent-soft: #16284a;
+  --color-buy: #4acb8a;
+  --color-refuse: #e3a443;
+  --color-halt: #f2675b;
+  --color-buy-soft: #10291f;
+  --color-refuse-soft: #2b2010;
+  --color-halt-soft: #2e1514;
+  --color-dot-buy: #3dbe7e;
+  --color-chainlink: #6f8cf0;
   --color-viz-1: #5a87f0;
   --color-viz-2: #bd8620;
   --color-viz-3: #17a3ab;
@@ -109,28 +113,6 @@ body {
   font-size: 15px;
   line-height: 1.5;
   min-height: 100dvh;
-}
-
-/* Ambient light behind every page, so the frosted surfaces have something to
-   frost. Fixed, soft and low in saturation; deeper in dark mode. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(42rem 32rem at 8% -6%, rgba(0, 122, 255, 0.16), transparent 70%),
-    radial-gradient(38rem 30rem at 96% 8%, rgba(175, 82, 222, 0.13), transparent 70%),
-    radial-gradient(46rem 34rem at 70% 104%, rgba(14, 154, 167, 0.12), transparent 70%),
-    radial-gradient(30rem 24rem at 4% 92%, rgba(255, 149, 0, 0.07), transparent 70%);
-}
-.dark body::before {
-  background:
-    radial-gradient(42rem 32rem at 8% -6%, rgba(10, 132, 255, 0.22), transparent 70%),
-    radial-gradient(38rem 30rem at 96% 8%, rgba(191, 90, 242, 0.16), transparent 70%),
-    radial-gradient(46rem 34rem at 70% 104%, rgba(23, 163, 171, 0.14), transparent 70%),
-    radial-gradient(30rem 24rem at 4% 92%, rgba(255, 159, 10, 0.06), transparent 70%);
 }
 
 ::selection {
@@ -236,16 +218,6 @@ body::before {
 }
 
 @media (prefers-reduced-transparency: reduce) {
-  body::before {
-    display: none;
-  }
-  .card,
-  .frost,
-  .ios-group {
-    background: var(--color-surface);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
   .glass {
     background: var(--color-surface);
     -webkit-backdrop-filter: none;
@@ -258,48 +230,26 @@ body::before {
   }
 }
 
-/* Frosted surfaces: mostly opaque so text stays crisp, blurred and saturated so
-   the ambient light shows through, with a lit top edge like iOS materials. */
+/* Solid surfaces separated by a hairline and a whisper of shadow. */
 .card,
 .frost {
-  background: color-mix(in srgb, var(--color-surface) 74%, transparent);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
+  background: var(--color-surface);
   border-radius: var(--radius-card);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    0 0 0 0.5px rgba(0, 0, 0, 0.06),
-    0 6px 24px -10px rgba(0, 0, 0, 0.12);
-}
-.dark .card,
-.dark .frost {
-  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 0 0 0.5px rgba(255, 255, 255, 0.08),
-    0 8px 28px -10px rgba(0, 0, 0, 0.55);
+    0 0 0 1px var(--color-hairline),
+    0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 @layer components {
-/* iOS inset grouped list: a white rounded group of rows with inset separators,
+/* iOS inset grouped list: a rounded group of rows with inset separators,
    a small header above and an optional footnote below. */
 .ios-group {
-  background: color-mix(in srgb, var(--color-surface) 74%, transparent);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
+  background: var(--color-surface);
   border-radius: var(--radius-card);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    0 0 0 0.5px rgba(0, 0, 0, 0.06),
-    0 6px 24px -10px rgba(0, 0, 0, 0.12);
+    0 0 0 1px var(--color-hairline),
+    0 1px 2px rgba(15, 23, 42, 0.04);
   overflow: hidden;
-}
-.dark .ios-group {
-  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 0 0 0.5px rgba(255, 255, 255, 0.08),
-    0 8px 28px -10px rgba(0, 0, 0, 0.55);
 }
 .ios-header {
   padding: 0 16px 7px;

@@ -5,14 +5,16 @@ export type DNode = { id: string; x: number; y: number; w: number; h?: number; t
 export type DEdge = { pts: [number, number][]; label?: string; at?: [number, number]; dashed?: boolean; tone?: Tone };
 type Tone = "blue" | "green" | "orange" | "red" | "purple" | "gray" | "chainlink";
 
+// Palette roles, not hues: action blue, brand navy, the three verdict colours,
+// neutral grey, and Chainlink's own blue for Chainlink.
 const TONE: Record<Tone, string> = {
-  blue: "#007aff",
-  green: "#34c759",
-  orange: "#ff9500",
-  red: "#ff3b30",
-  purple: "#af52de",
-  gray: "#8e8e93",
-  chainlink: "#375bd2",
+  blue: "var(--color-accent)",
+  green: "var(--color-buy)",
+  orange: "var(--color-refuse)",
+  red: "var(--color-halt)",
+  purple: "var(--color-brand-2)",
+  gray: "var(--color-muted)",
+  chainlink: "var(--color-chainlink)",
 };
 
 /// A small flow diagram in the iOS idiom: white rounded nodes with an app-style
@@ -28,7 +30,7 @@ export function Diagram({ id, width, height, nodes, edges, label, steps }: { id:
           </marker>
           {Object.entries(TONE).map(([k, c]) => (
             <marker key={k} id={`${id}-arrow-${k}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-              <path d="M0,0 L10,5 L0,10 z" fill={c} />
+              <path d="M0,0 L10,5 L0,10 z" style={{ fill: c }} />
             </marker>
           ))}
         </defs>
@@ -52,7 +54,7 @@ export function Diagram({ id, width, height, nodes, edges, label, steps }: { id:
           return (
             <g key={n.id}>
               <rect x={n.x} y={n.y} width={n.w} height={h} rx={16} style={{ fill: "var(--color-surface)", stroke: "var(--color-hairline)" }} strokeWidth={1} />
-              <rect x={n.x + 14} y={n.y + h / 2 - 18} width={36} height={36} rx={10} fill={TONE[n.tone]} />
+              <rect x={n.x + 14} y={n.y + h / 2 - 18} width={36} height={36} rx={10} style={{ fill: TONE[n.tone] }} />
               <Icon x={n.x + 22} y={n.y + h / 2 - 10} width={20} height={20} color="#fff" strokeWidth={2.2} />
               <text x={n.x + 62} y={n.y + (n.sub ? h / 2 - 4 : h / 2 + 5)} style={{ fill: "var(--color-ink)", fontSize: 15, fontWeight: 600 }}>
                 {n.title}
