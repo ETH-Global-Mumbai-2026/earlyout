@@ -11,7 +11,7 @@ cd cre/nav-bridge && bun install && cd ..
 cp .env.example .env                                     # CRE_ETH_PRIVATE_KEY, funded with Arc test USDC
 ```
 
-Edit `nav-bridge/config.staging.json`: `oracleAddress` and each fund's `fund` address from `contracts/deployments/arc-testnet.json`, and `issuerStatusUrl` to the deployed app.
+Edit `nav-bridge/config.staging.json`: `oracleAddress` and each fund's `fund` address from `contracts/deployments/arc-testnet.json` (ACRED, ACREDd) and `contracts/deployments/arc-testnet-funds.json` (the other eight), each feed's `feedDecimals`, and `issuerStatusUrl` to the deployed app.
 
 Point the oracle at the simulation forwarder, then simulate with a real transaction:
 
@@ -60,3 +60,28 @@ ACREDd: NavOracle updated on Arc, tx 0xeca23a15be998130a033842abd04609cc198a5829
 ```
 
 The oracle's forwarder was then set back to the ops wallet so the app's Refresh NAV button keeps working. Pointing it at the simulation forwarder again (one `setForwarder` call) hands NAV back to CRE.
+
+## Ten funds under production limits
+
+On 7 November the workflow was cut to one EVM read per fund (feed decimals never change, so they now come from config as `feedDecimals`), reads at the last finalized block, runs hourly, and wraps each fund in its own try/catch so one bad feed or one failed status call does not silence the others. On an issuer API outage nothing is reported for that fund: its NAV ages, and the vault halts it once the NAV passes the fund's maxAge, which is safer than guessing.
+
+Dry run with all ten funds and CRE's production quotas enforced: `cre workflow simulate ./nav-bridge --target staging-settings --limits default --non-interactive --trigger-index 0` (no `--broadcast`, so transaction hashes print as zero):
+
+```
+ACRED: nav=111377320000 dec=8 updatedAt=1793916047 status=OK
+ACREDd: nav=111377320000 dec=8 updatedAt=1793916047 status=OK
+JAAA: nav=1055506 dec=6 updatedAt=1793986895 status=OK
+JTRSY: nav=1121860 dec=6 updatedAt=1793986895 status=OK
+USTB: nav=11269831 dec=6 updatedAt=1793974547 status=OK
+USCC: nav=11820952 dec=6 updatedAt=1793971763 status=OK
+USTBL: nav=1102123 dec=6 updatedAt=1793981435 status=OK
+SAFO: nav=1027272 dec=6 updatedAt=1793979803 status=OK
+CASH+: nav=110297000000000000000 dec=18 updatedAt=1793956595 status=OK
+Treasury+: nav=931284400000000000000 dec=18 updatedAt=1793955395 status=OK
+```
+
+The issuer status API answers for the single stand-in issuer, so the `fund` parameter is echoed but one status covers every fund.
+
+## Forwarder hygiene
+
+While the oracle's forwarder is the simulation MockKeystoneForwarder, anyone can deliver a report through it. Keep the forwarder on the ops wallet except while recording a CRE broadcast, and point it back right after. Before ever pointing it at the deployed KeystoneForwarder, call `setExpectedWorkflowOwner` (and ideally `setExpectedWorkflowId`) so only this workflow's reports are accepted.

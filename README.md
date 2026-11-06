@@ -6,6 +6,8 @@ Tokenized private credit funds let investors out once a quarter or once a month.
 
 Earlyout lets that investor sell their pending redemption today. The redemption becomes a claim token, the investor sells it to a USDC vault on Arc, and the vault collects from the fund when it pays. The price is the fund's real NAV minus a spread that names its four reasons. Every quote shows a verdict first: BUY, REFUSE or HALT.
 
+Every balance in Earlyout is USDC on Arc (`0x3600...0000`, 6 decimals). The Vault is an ERC-4626 vault whose asset is USDC: liquidity providers deposit and withdraw USDC, a seller is paid USDC in the same transaction that files the redemption (`depositAndSell`), and the issuer settles by sending USDC back to the vault. The stablecoin logic lives in `totalAssets()`: each claim is carried at its USDC cost until `settle` collects the full amount, so the share price moves only on USDC that has actually arrived, and `markImpaired` writes a failed fund's claims down to its recovery value for every LP at once. Idle USDC is tracked apart from USDC tied up in claims: a quote returns REFUSE when a purchase would pass a fund's exposure cap or the vault's idle USDC, and withdrawals are capped at idle USDC so claims are never sold to pay an LP out.
+
 Built at ETHGlobal Mumbai 2026. Submitted for: **Arc, Best Smart Contracts with Advanced Stablecoin Logic in Arc Studio** · **Arkiv, Build on Arkiv (from scratch)** · **Chainlink, Best workflow with CRE**.
 
 | | |
@@ -108,7 +110,7 @@ The Book screen reads only from Arkiv. Writer wallet: `0x343F684dAFFf216CDf38a40
 Query the book yourself:
 
 ```bash
-cd web && pnpm install && pnpm arkiv:query
+cd web && pnpm install && pnpm arkiv:query   # Node 22.10 or later
 ```
 
 It runs `select().from(earlyout.claims).where(eq("status","open")).ownedBy(writer).orderBy(asc("settleAt"))` against the public RPC (`web/scripts/arkiv-query.ts`). Judging files: [`arkiv/schema.md`](arkiv/schema.md), [`friction.md`](arkiv/friction.md), [`reach.md`](arkiv/reach.md), [`why-arkiv.md`](arkiv/why-arkiv.md), [`how-you-use-arkiv.md`](arkiv/how-you-use-arkiv.md).
@@ -136,7 +138,7 @@ cd web && cp .env.example .env.local   # fill in addresses, or NEXT_PUBLIC_MODE=
 pnpm install && pnpm dev
 ```
 
-Contracts: `cd contracts && forge test`. Deploy: `forge script script/Deploy.s.sol --rpc-url arc_testnet --broadcast` with `NEW_OWNER` set.
+Contracts: install the dependencies first (`cd contracts && forge install foundry-rs/forge-std OpenZeppelin/openzeppelin-contracts@v5.7.0 --no-git`, as CI does), then `forge test`. Note `Vault.sell(claimId, amount, minPayout, receiver)` takes a fourth argument, and `ClaimSold` emits `receiver`. Deploy: `forge script script/Deploy.s.sol --rpc-url arc_testnet --broadcast` with `NEW_OWNER` set.
 
 ## Honest limits
 
@@ -169,7 +171,7 @@ We built and reviewed locally and committed in topic-sized batches, so most comm
 | 7 Nov, about 02:00 | Arc Studio deploys eight more fund stand-ins, each priced from its own Chainlink NAV feed | [first tx](https://explorer.testnet.arc.io/tx/0x50ce522234e26b921cd7e8c42d48f682fced7e8ec2eefe750cda961ac919cd50), `docs/studio/06-more-funds.md` |
 | 7 Nov, about 02:10 | Ops wallet lists them in FundRegistry and reports their Chainlink NAVs | [first listing](https://explorer.testnet.arc.io/tx/0xf2a12e5d056e8790fffa0bb6d041b0f136a80c93c4ea4c593b3775afa4949918) |
 
-From 7 November on, work is committed as it happens.
+From 7 November on, work is committed in small topic commits, several at a time after each round of review.
 
 ## For the submission form
 
@@ -181,7 +183,7 @@ From 7 November on, work is committed as it happens.
 
 ## How we used AI
 
-See [`docs/ai-usage.md`](docs/ai-usage.md) for the file-by-file record. In short: Arc Studio's agent reviewed, tested and deployed the contracts; Claude Code (Fable 5.1) wrote the contracts' first draft, the web app, the indexer, the CRE workflow and these documents under our direction; every design decision, prompt and check was ours.
+See [`docs/ai-usage.md`](docs/ai-usage.md) for the file-by-file record. In short: Arc Studio's agent reviewed, tested and deployed the contracts; Claude Code (Fable 5.1, later Opus 5.5) wrote the contracts' first draft, the web app, the indexer, the CRE workflow and these documents under our direction; every design decision, prompt and check was ours.
 
 ## Licence
 

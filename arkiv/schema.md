@@ -43,7 +43,7 @@ Refreshed on every NAV update and extended to expire one day after the refresh. 
 | updatedAt | u64 | yes |
 | nav, status, txHash | | |
 
-Expires after 30 days. Gives the Status screen its NAV history.
+Expires after 30 days. A public record of every NAV report the oracle accepted, for anyone who wants the history; the app's screens read the live NAV from Arc, not from these entities.
 
 ## `earlyout.cursor`, one entity
 

@@ -95,7 +95,7 @@ If this phase is not working in time, keep the Phase 3 pusher, drop the Chainlin
 
 ### Phase 7: submission
 
-Repo public. README: addresses, Studio URL, architecture diagram, real versus stand-in table, AI usage by file, Arkiv wallet and query, honest limits. Demo video: the problem with ACRED's real schedule; sell (BUY, four terms, USDC arrives); REFUSE; Book from Arkiv; issuer fails (CRE run, HALT, share price drops); Arc Studio. Three prizes selected, Arc bounty named: Best DeFi App.
+Repo public. README: addresses, Studio URL, architecture diagram, real versus stand-in table, AI usage by file, Arkiv wallet and query, honest limits. Demo video: the problem with ACRED's real schedule; sell (BUY, four terms, USDC arrives); REFUSE; Book from Arkiv; issuer fails (CRE run, HALT, share price drops); Arc Studio. Three prizes selected, Arc bounty named: Best Smart Contracts with Advanced Stablecoin Logic in Arc Studio.
 
 ## Cut order if time is short
 

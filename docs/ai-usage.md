@@ -30,11 +30,15 @@ ETHGlobal's rules ask every team to say where and how AI tools were used, by fil
 | `studio-app/**` | Arc Studio agent, from the prompt in `docs/studio/05-studio-web-app.md` | team, in the Studio preview |
 | `web/src/**` | Claude Code | team: design direction, screenshots reviewed on phone, tablet and desktop |
 | `web/src/components/ui/portfolio-hero-with-paper-shaders.tsx` | pasted from a public component library at our request; the only change is one shape name the installed version lacks | team |
-| `web/e2e/*.spec.ts`, `web/playwright.config.ts` | Claude Code | run on three devices, 66 passing |
+| `web/e2e/*.spec.ts`, `web/playwright.config.ts` | Claude Code | run on three devices; Playwright reports 66 passing |
 | `web/src/server/arkiv/*`, `web/scripts/arkiv-query.ts` | Claude Code | team ran the sync and the query against Rabdi |
 | `cre/nav-bridge/*` | Claude Code, from the CRE TypeScript docs | team ran `cre workflow simulate --broadcast` three times on Arc Testnet |
 | `arkiv/*.md` | Claude Code; friction entries are snags we actually hit | team |
 | `README.md`, `docs/ai-usage.md`, `docs/demo-script.md` | Claude Code | team |
+| `cre/project.yaml`, `cre/README.md`, `cre/.env.example`, `cre/nav-bridge/config.*.json` | Claude Code | team ran the simulations |
+| `docs/studio/06-more-funds.md`, `docs/studio/deploy-earlyout-funds.ts`, `contracts/deployments/arc-testnet-funds.json` | prompt by Claude Code; script and deploy by the Arc Studio agent | team checked owners on chain |
+| `web/scripts/*` (`arkiv-query.ts`, `impair.ts`, `check-abi.ts`, `sync-addresses.ts`), `web/AGENTS.md`, `studio-app/AGENTS.md` | Claude Code; `studio-app/AGENTS.md` by the Arc Studio agent | team |
+| `scripts/check.sh`, `.github/workflows/ci.yml`, `contracts/foundry.toml`, `contracts/remappings.txt`, `web/next.config.ts`, `web/vercel.json`, `web/eslint.config.mjs`, `web/components.json`, `web/package.json`, `.env.example` files | Claude Code | team |
 | `web/public/brand/*`, icons | Claude Code drew the SVG mark; icons rendered from it | team chose the concept |
 
 ## Planning artifacts
