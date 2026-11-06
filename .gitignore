@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Foundry
+out/
+cache/
+broadcast/*/31337/
+
+# Builds
+.next/
+dist/
+build/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.key
+
+# OS and editors
+.DS_Store
+.vscode/
+.idea/
