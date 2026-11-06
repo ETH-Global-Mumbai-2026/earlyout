@@ -1,0 +1,46 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: Install libraries
+        working-directory: contracts
+        run: forge install foundry-rs/forge-std OpenZeppelin/openzeppelin-contracts@v5.7.0 --no-git
+      - name: Build
+        working-directory: contracts
+        run: forge build --sizes
+      - name: Test
+        working-directory: contracts
+        run: forge test -vv
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: Install
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+      - name: Lint and typecheck
+        working-directory: web
+        run: pnpm check
+      - name: Build
+        working-directory: web
+        run: pnpm build
+        env:
+          NEXT_PUBLIC_MODE: mock
