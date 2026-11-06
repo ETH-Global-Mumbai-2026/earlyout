@@ -82,6 +82,11 @@ export function useSetIssuerFailed() {
   const done = useInvalidateAll();
   return useMutation({
     mutationFn: async (failed: boolean) => {
+      if (MODE === "mock") {
+        const { setMockIssuerFailed } = await import("@/lib/source/mock");
+        setMockIssuerFailed(failed);
+        return { status: failed ? ("FAILED" as const) : ("OK" as const) };
+      }
       const res = await fetch("/api/issuer-status", {
         method: "POST",
         headers: { "content-type": "application/json", "x-demo-token": demoKey() },
