@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Dark mode follows a class on <html>, so the person's explicit choice can
+   override the system setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* One light theme across the site and the app: Apple's type, surfaces and motion,
    held to an enterprise density. */
 
@@ -9,44 +13,83 @@
   --font-sans: var(--font-averta), -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 
-  /* One light theme, Apple-flavoured, enterprise-dense. */
-  --color-canvas: #f5f5f7;
-  --color-surface: #ffffff;
-  --color-surface-2: #fbfbfd;
-  --color-sunk: #f2f2f5;
-  --color-ink: #1d1d1f;
-  --color-ink-2: #3a3a3c;
-  --color-muted: #6e6e73;
-  --color-faint: #a1a1a6;
-  --color-hairline: #e5e5ea;
-  --color-line-strong: #d2d2d7;
+  /* iOS system palette, light. Grouped background, white grouped cells,
+     system separators and system blue; status colours darkened for text contrast. */
+  --color-canvas: #f2f2f7; /* systemGroupedBackground */
+  --color-surface: #ffffff; /* secondarySystemGroupedBackground */
+  --color-surface-2: #f9f9fb;
+  --color-sunk: #e9e9ee; /* tertiary fill, segmented track */
+  --color-ink: #1c1c1e; /* label */
+  --color-ink-2: #3c3c43; /* secondary label, full strength */
+  --color-muted: #6c6c70; /* secondary label at 60% on white */
+  --color-faint: #aeaeb2; /* tertiary label */
+  --color-hairline: #e2e2e7; /* separator */
+  --color-line-strong: #c7c7cc; /* opaque separator, input borders */
   --color-brand: #0b2545;
-  --color-accent: #0071e3;
+  --color-accent: #007aff; /* systemBlue */
   --color-accent-ink: #ffffff;
-  --color-accent-soft: #eaf3ff;
-  --color-buy: #1a7f37;
-  --color-refuse: #b25000;
-  --color-halt: #d70015;
-  --color-buy-soft: #e9f7ee;
-  --color-refuse-soft: #fff4e5;
-  --color-halt-soft: #ffeeef;
+  --color-accent-soft: #e5f1ff;
+  --color-buy: #248a3d; /* systemGreen, text weight */
+  --color-refuse: #c93400; /* systemOrange, text weight */
+  --color-halt: #d70015; /* systemRed, text weight */
+  --color-buy-soft: #e3f6e8;
+  --color-refuse-soft: #fff1e0;
+  --color-halt-soft: #ffe8ea;
+  --color-dot-buy: #34c759;
 
-  /* Chart palette: fixed order, validated for CVD and contrast (dataviz skill).
-     1 base, 2 vault usage, 3 time to payout, 4 issuer credit. */
-  --color-viz-1: #2a78d6;
-  --color-viz-2: #eb6834;
-  --color-viz-3: #1baf7a;
-  --color-viz-4: #eda100;
-  --color-viz-track: #e4e7ec;
+  /* Spread terms: a validated categorical palette, fixed order
+     (1 base, 2 vault usage, 3 time to payout, 4 issuer credit).
+     Credit is violet, never red: it is a premium the vault earns. */
+  --color-viz-1: #4c7ef3;
+  --color-viz-2: #a96500;
+  --color-viz-3: #0e9aa7;
+  --color-viz-4: #8e44c9;
+  --color-viz-track: #e9e9ee;
 
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --radius-card: 18px;
-  --radius-control: 12px;
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.04);
-  --shadow-float: 0 30px 80px -24px rgba(0, 0, 0, 0.28), 0 8px 24px -8px rgba(0, 0, 0, 0.08);
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1); /* iOS sheet curve */
+  --radius-card: 14px;
+  --radius-control: 10px;
+  --radius-sheet: 22px;
+  /* Hairline first, shadow second. */
+  --shadow-card: 0 0 0 0.5px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-float: 0 0 0 0.5px rgba(0, 0, 0, 0.05), 0 12px 40px -12px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
-/* App: same light theme, denser type. */
+/* Dark: a counterpart chosen on its own surface, not an inversion. A deep,
+   slightly cool grey rather than pure black, so white text does not vibrate and
+   grouped cells still read as raised. iOS system colours use their dark variants. */
+.dark {
+  color-scheme: dark;
+  --color-canvas: oklch(0.178 0.006 264);
+  --color-surface: oklch(0.226 0.008 264);
+  --color-surface-2: oklch(0.25 0.009 264);
+  --color-sunk: oklch(0.3 0.01 264);
+  --color-ink: oklch(0.968 0.003 264);
+  --color-ink-2: oklch(0.86 0.006 264);
+  --color-muted: oklch(0.722 0.01 264);
+  --color-faint: oklch(0.566 0.01 264);
+  --color-hairline: oklch(0.31 0.01 264);
+  --color-line-strong: oklch(0.39 0.011 264);
+  --color-accent: #0a84ff;
+  --color-accent-soft: oklch(0.3 0.06 260);
+  --color-buy: #30d158;
+  --color-refuse: #ff9f0a;
+  --color-halt: #ff453a;
+  --color-buy-soft: oklch(0.29 0.05 152);
+  --color-refuse-soft: oklch(0.3 0.055 70);
+  --color-halt-soft: oklch(0.3 0.065 25);
+  --color-dot-buy: #30d158;
+  --color-viz-1: #5a87f0;
+  --color-viz-2: #bd8620;
+  --color-viz-3: #17a3ab;
+  --color-viz-4: #9e63d2;
+  --color-viz-track: oklch(0.3 0.01 264);
+  /* Shadows do not read on dark surfaces: an inset hairline instead. */
+  --shadow-card: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07);
+  --shadow-float: inset 0 0 0 0.5px rgba(255, 255, 255, 0.09), 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* App: same theme, denser type. */
 .theme-app {
   background: var(--color-canvas);
   color: var(--color-ink);
@@ -63,7 +106,7 @@ body {
   background: var(--color-canvas);
   color: var(--color-ink);
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.5;
   min-height: 100dvh;
 }
@@ -73,59 +116,67 @@ body {
   color: var(--color-accent-ink);
 }
 
-/* Type: one sans; weight and size carry hierarchy. Numbers line up. */
+/* Type: Apple's named scale. Weight and size carry hierarchy; sentence case. */
 .t-hero {
-  font-size: clamp(2.5rem, 6.2vw, 4.75rem);
-  line-height: 1.04;
-  letter-spacing: -0.035em;
+  font-size: clamp(2.5rem, 5.2vw, 4rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
   font-weight: 700;
   color: var(--color-ink);
 }
+/* Large Title */
 .t-page {
-  font-size: clamp(2.125rem, 4.4vw, 3rem);
-  line-height: 1.08;
-  letter-spacing: -0.028em;
+  font-size: clamp(2rem, 3.6vw, 2.5rem);
+  line-height: 1.12;
+  letter-spacing: -0.022em;
   font-weight: 700;
   color: var(--color-ink);
 }
+/* Title 1 */
 .t-display {
-  font-size: clamp(1.75rem, 3.2vw, 2.5rem);
-  line-height: 1.1;
-  letter-spacing: -0.025em;
+  font-size: clamp(1.625rem, 2.8vw, 2.125rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
   font-weight: 700;
   color: var(--color-ink);
 }
 .theme-app .t-display {
-  font-size: clamp(1.5rem, 2.4vw, 1.875rem);
+  font-size: 2.125rem; /* Large Title in the app */
+  line-height: 2.5625rem;
 }
+/* Title 2 */
 .t-title {
-  font-size: 1.25rem;
-  line-height: 1.25;
-  font-weight: 600;
+  font-size: 1.375rem;
+  line-height: 1.75rem;
+  letter-spacing: -0.017em;
+  font-weight: 700;
 }
+/* Headline */
 .t-headline {
-  font-size: 0.9375rem;
-  line-height: 1.35;
+  font-size: 1.0625rem;
+  line-height: 1.375rem;
+  letter-spacing: -0.011em;
   font-weight: 600;
 }
 .t-body {
-  font-size: 0.875rem;
-  line-height: 1.55;
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
 }
 .t-lede {
   font-size: 1.0625rem;
-  line-height: 1.6;
+  line-height: 1.55;
   color: var(--color-muted);
 }
+/* Footnote */
 .t-caption {
-  font-size: 0.75rem;
-  line-height: 1.45;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
   color: var(--color-muted);
 }
 .t-eyebrow {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 500;
-  line-height: 1.4;
+  line-height: 1.125rem;
   color: var(--color-muted);
 }
 
@@ -141,11 +192,33 @@ body {
 }
 
 .material {
-  background: color-mix(in srgb, #ffffff 72%, transparent);
+  background: color-mix(in srgb, var(--color-canvas) 78%, transparent);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
 }
+/* Liquid glass: a floating, translucent capsule with a lit top edge. */
+.glass {
+  background: color-mix(in srgb, var(--color-surface) 66%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  backdrop-filter: blur(24px) saturate(190%);
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.7),
+    0 0 0 0.5px rgba(0, 0, 0, 0.06),
+    0 8px 28px -8px rgba(0, 0, 0, 0.16);
+}
+.dark .glass {
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    0 10px 30px -8px rgba(0, 0, 0, 0.6);
+}
+
 @media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background: var(--color-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
   .material {
     background: var(--color-canvas);
     -webkit-backdrop-filter: none;
@@ -156,8 +229,58 @@ body {
 .card {
   background: var(--color-surface);
   border-radius: var(--radius-card);
-  border: 1px solid color-mix(in srgb, var(--color-hairline) 70%, transparent);
   box-shadow: var(--shadow-card);
+}
+
+@layer components {
+/* iOS inset grouped list: a white rounded group of rows with inset separators,
+   a small header above and an optional footnote below. */
+.ios-group {
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.ios-header {
+  padding: 0 16px 7px;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+.ios-footer {
+  padding: 7px 16px 0;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  color: var(--color-muted);
+}
+.ios-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px 16px;
+}
+.ios-row + .ios-row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: var(--inset, 16px);
+  border-top: 1px solid var(--color-hairline);
+}
+.ios-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
 }
 
 /* Press feedback: quick and quiet. */
@@ -235,13 +358,13 @@ input::-webkit-inner-spin-button {
   border-collapse: collapse;
 }
 .tbl th {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   color: var(--color-muted);
   text-align: left;
   padding: 0.625rem 1rem;
   border-bottom: 1px solid var(--color-hairline);
-  background: var(--color-surface-2);
+  background: var(--color-surface);
   white-space: nowrap;
 }
 .tbl td {
@@ -261,8 +384,8 @@ input::-webkit-inner-spin-button {
   align-items: center;
   gap: 6px;
   height: 22px;
-  padding: 0 8px;
-  border-radius: 4px;
+  padding: 0 9px;
+  border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 500;
   white-space: nowrap;

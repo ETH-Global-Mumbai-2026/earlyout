@@ -21,7 +21,7 @@ export function useWidth<T extends HTMLElement>() {
 /// The four spread terms in their fixed palette order. Never reordered, never cycled.
 export const TERM_COLORS = ["var(--color-viz-1)", "var(--color-viz-2)", "var(--color-viz-3)", "var(--color-viz-4)"] as const;
 /// Text set inside a filled block: white on blue and orange, near-black on aqua and yellow.
-export const TERM_INK = ["#ffffff", "#ffffff", "#0a0a0a", "#0a0a0a"] as const;
+export const TERM_INK = ["#ffffff", "#ffffff", "#ffffff", "#ffffff"] as const;
 export const TERM_NAMES = ["Base", "Vault usage", "Time to payout", "Issuer credit"] as const;
 
 /// Value first, label second; a short line key in the series colour.

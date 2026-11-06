@@ -13,19 +13,20 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export function Button({ variant = "primary", size = "md", loading, disabled, className = "", children, ...rest }: ButtonProps) {
   const v = {
-    primary: "border border-accent bg-accent text-accent-ink hover:bg-[#0077ed]",
-    secondary: "border border-line-strong bg-surface text-ink-2 hover:bg-sunk",
-    danger: "border border-halt bg-halt text-white hover:brightness-110",
-    ghost: "border border-transparent bg-transparent text-accent hover:bg-accent-soft",
+    // iOS: filled, tinted, gray and plain buttons.
+    primary: "bg-accent text-accent-ink hover:brightness-95 active:brightness-90",
+    secondary: "bg-accent-soft text-accent hover:brightness-[0.97]",
+    danger: "bg-halt-soft text-halt hover:brightness-[0.97]",
+    ghost: "bg-transparent text-accent hover:bg-accent-soft",
   }[variant];
-  const s = { sm: "h-8 px-3 text-[13px]", md: "h-10 px-4 text-sm", lg: "h-12 px-5 text-[16px]" }[size];
+  const s = { sm: "h-8 px-3.5 text-[14px] rounded-[9px]", md: "h-11 px-5 text-[15px] rounded-[12px]", lg: "h-[52px] px-6 text-[17px] rounded-[14px]" }[size];
   return (
     <button
       type="button"
       {...rest}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={cn("pressable inline-flex items-center justify-center gap-2 rounded-xl font-medium disabled:cursor-not-allowed disabled:opacity-40", v, s, className)}
+      className={cn("pressable inline-flex items-center justify-center gap-2 font-semibold disabled:cursor-not-allowed disabled:opacity-40", v, s, className)}
     >
       {loading && <Spinner />}
       {children}
@@ -41,15 +42,17 @@ export function Card({ children, className = "" }: { children: ReactNode; classN
   return <section className={cn("card p-5", className)}>{children}</section>;
 }
 
-/// A card with a titled header row and an optional note on the right.
-export function Panel({ title, note, children, className = "", bodyClassName = "" }: { title: ReactNode; note?: ReactNode; children: ReactNode; className?: string; bodyClassName?: string }) {
+/// An iOS grouped section: the title sits above a white rounded group, with an
+/// optional note on the right of the title and a footnote below.
+export function Panel({ title, note, footer, children, className = "", bodyClassName = "", plain }: { title: ReactNode; note?: ReactNode; footer?: ReactNode; children: ReactNode; className?: string; bodyClassName?: string; plain?: boolean }) {
   return (
-    <section className={cn("card min-w-0 overflow-hidden", className)}>
-      <header className="flex items-center justify-between gap-3 border-b border-hairline px-5 py-3.5">
-        <h2 className="t-headline">{title}</h2>
-        {note && <div className="t-caption text-right">{note}</div>}
+    <section className={cn("min-w-0", className)}>
+      <header className="flex items-end justify-between gap-3 px-1 pb-2">
+        <h2 className="t-title text-[20px] leading-6">{title}</h2>
+        {note && <div className="t-caption pb-0.5 text-right">{note}</div>}
       </header>
-      <div className={bodyClassName}>{children}</div>
+      <div className={cn(!plain && "ios-group", bodyClassName)}>{children}</div>
+      {footer && <div className="ios-footer">{footer}</div>}
     </section>
   );
 }
@@ -58,33 +61,34 @@ export function Stat({ label, value, hint, className = "" }: { label: string; va
   return (
     <div className={className}>
       <div className="t-eyebrow">{label}</div>
-      <div className="num mt-1 text-xl font-semibold">{value}</div>
+      <div className="num mt-1 text-[22px] font-bold tracking-[-0.02em]">{value}</div>
       {hint && <div className="t-caption mt-0.5">{hint}</div>}
     </div>
   );
 }
 
+/// An iOS list row: label on the left, value on the right.
 export function Row({ label, value, hint }: { label: ReactNode; value: ReactNode; hint?: ReactNode }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 py-2">
-      <div className="min-w-0">
-        <div className="text-[13px]">{label}</div>
+    <div className="ios-row">
+      <div className="min-w-0 flex-1">
+        <div className="text-[15px]">{label}</div>
         {hint && <div className="t-caption">{hint}</div>}
       </div>
-      <div className="num tnum text-right text-[13px] font-medium">{value}</div>
+      <div className="num tnum text-right text-[15px] text-ink-2">{value}</div>
     </div>
   );
 }
 
 export function Notice({ tone = "info", children }: { tone?: "info" | "warn" | "error" | "success"; children: ReactNode }) {
   const c = {
-    info: "border-hairline bg-surface-2 text-ink-2",
+    info: "border-transparent bg-sunk/70 text-ink-2",
     warn: "border-refuse/30 bg-refuse-soft text-ink",
     error: "border-halt/30 bg-halt-soft text-ink",
     success: "border-buy/30 bg-buy-soft text-ink",
   }[tone];
   return (
-    <div role={tone === "error" ? "alert" : "status"} className={cn("rounded-xl border px-4 py-3 text-[13px]", c)}>
+    <div role={tone === "error" ? "alert" : "status"} className={cn("rounded-[12px] border px-4 py-3 text-[14px]", c)}>
       {children}
     </div>
   );
@@ -160,7 +164,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            className="card fixed inset-x-3 bottom-3 z-40 mx-auto max-w-md p-6 shadow-[var(--shadow-float)] sm:inset-x-0 sm:bottom-auto sm:top-[28%]"
+            className="fixed inset-x-2 bottom-2 z-40 mx-auto max-w-md rounded-[var(--radius-sheet)] bg-surface p-6 shadow-[var(--shadow-float)] sm:inset-x-0 sm:bottom-auto sm:top-[24%]"
             initial={reduce ? { opacity: 0 } : { opacity: 0, transform: "translateY(24px) scale(0.98)" }}
             animate={{ opacity: 1, transform: "translateY(0px) scale(1)" }}
             exit={reduce ? { opacity: 0 } : { opacity: 0, transform: "translateY(24px) scale(0.98)" }}
@@ -182,7 +186,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
 
 export function Segmented<T extends string>({ value, onChange, options, label }: { value: T; onChange: (v: T) => void; options: { value: T; label: string }[]; label: string }) {
   return (
-    <div role="radiogroup" aria-label={label} className="relative inline-grid auto-cols-fr grid-flow-col rounded-[10px] bg-sunk p-0.5">
+    <div role="radiogroup" aria-label={label} className="relative inline-grid auto-cols-fr grid-flow-col rounded-[9px] bg-sunk p-[2px]">
       {options.map((o) => {
         const active = o.value === value;
         return (
@@ -192,12 +196,12 @@ export function Segmented<T extends string>({ value, onChange, options, label }:
             role="radio"
             aria-checked={active}
             onClick={() => onChange(o.value)}
-            className={cn("pressable relative rounded-[8px] px-3.5 py-1.5 text-[13px] font-medium", active ? "text-ink" : "text-muted hover:text-ink")}
+            className={cn("pressable relative rounded-[7px] px-4 py-1.5 text-[14px] font-medium", active ? "text-ink" : "text-ink-2 hover:text-ink")}
           >
             {active && (
               <motion.span
                 layoutId={`seg-${label}`}
-                className="absolute inset-0 rounded-[8px] bg-surface shadow-[0_1px_3px_rgba(0,0,0,0.12),0_0_0_0.5px_rgba(0,0,0,0.04)]"
+                className="absolute inset-0 rounded-[7px] bg-surface shadow-[0_3px_8px_rgba(0,0,0,0.12),0_3px_1px_rgba(0,0,0,0.04)] dark:bg-[oklch(0.44_0.01_264)]"
                 transition={{ type: "spring", bounce: 0, duration: 0.35 }}
               />
             )}

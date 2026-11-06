@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { themeScript } from "@/components/ThemeToggle";
 import { Providers } from "@/components/Providers";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 
@@ -14,6 +15,13 @@ const averta = localFont({
   ],
   variable: "--font-averta",
   display: "swap",
+  // Averta's own metrics leave more room above the letters than below, so
+  // centred labels sat low. Same total line height, capitals centred.
+  declarations: [
+    { prop: "ascent-override", value: "100.4%" },
+    { prop: "descent-override", value: "29.4%" },
+    { prop: "line-gap-override", value: "0%" },
+  ],
   fallback: ["-apple-system", "BlinkMacSystemFont", "Helvetica Neue", "Segoe UI", "Roboto", "Arial", "sans-serif"],
 });
 
@@ -41,7 +49,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#ffffff",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f2f2f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#16171a" },
+  ],
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -49,7 +60,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={averta.variable}>
+    <html lang="en" className={averta.variable} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>
         <Providers>{children}</Providers>
       </body>
