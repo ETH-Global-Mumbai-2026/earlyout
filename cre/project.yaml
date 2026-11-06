@@ -1,0 +1,14 @@
+# Chainlink CRE project settings. Chain names are CRE selector names.
+staging-settings:
+  rpcs:
+    - chain-name: ethereum-mainnet
+      url: https://ethereum-rpc.publicnode.com
+    - chain-name: arc-testnet
+      url: https://rpc.testnet.arc.io
+
+production-settings:
+  rpcs:
+    - chain-name: ethereum-mainnet
+      url: https://ethereum-rpc.publicnode.com
+    - chain-name: arc-testnet
+      url: https://rpc.testnet.arc.io

@@ -1,0 +1,20 @@
+{
+  "schedule": "0 */10 * * * *",
+  "feedChainName": "ethereum-mainnet",
+  "arcChainName": "arc-testnet",
+  "oracleAddress": "0xCd55924a73771d508887905473d93B981ac4A08b",
+  "issuerStatusUrl": "https://earlyout.vercel.app/api/issuer-status",
+  "gasLimit": "400000",
+  "funds": [
+    {
+      "symbol": "ACRED",
+      "fund": "0xCd5DE841b0f781A866cA6E978A19d6d5431683E2",
+      "feed": "0x35DDfB90011E686CCf837a6819562705076207EB"
+    },
+    {
+      "symbol": "ACREDd",
+      "fund": "0x8d9FF934E08DA9f8AEbF2280dAD218e8d176d06F",
+      "feed": "0x35DDfB90011E686CCf837a6819562705076207EB"
+    }
+  ]
+}
