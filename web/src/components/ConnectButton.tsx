@@ -13,13 +13,13 @@ export function ConnectButton() {
   const { switchChain, isPending: switching } = useSwitchChain();
 
   if (MODE === "mock") {
-    return <span className="t-caption shrink-0 rounded-full bg-surface-2 px-3 py-1.5">Demo data</span>;
+    return <span className="num rounded-xl border border-line-strong bg-surface px-3 py-1.5 text-xs text-muted">0x0000…d3b0</span>;
   }
   if (!isConnected || !address) {
     const injected = connectors[0];
     return (
       <Button size="sm" onClick={() => injected && connect({ connector: injected })} loading={isPending} disabled={!injected}>
-        Connect
+        Connect wallet
       </Button>
     );
   }
@@ -32,7 +32,8 @@ export function ConnectButton() {
   }
   return (
     <Button size="sm" variant="secondary" onClick={() => disconnect()} title="Disconnect">
-      <span className="t-mono">{shortAddr(address)}</span>
+      <span className="size-1.5 rounded-full bg-buy" />
+      <span className="num">{shortAddr(address)}</span>
     </Button>
   );
 }
