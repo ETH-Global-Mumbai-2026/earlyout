@@ -1,0 +1,6 @@
+{
+  "crons": [
+    { "path": "/api/nav/push", "schedule": "0 0 * * *" },
+    { "path": "/api/arkiv/sync", "schedule": "30 0 * * *" }
+  ]
+}
