@@ -1,0 +1,55 @@
+import { NextResponse } from "next/server";
+import { issuerAbi } from "@/lib/abi";
+import { serverEnv } from "@/server/env";
+import { mockIssuerFailed, setMockIssuerFailed } from "@/lib/source/mock";
+
+
+/// GET /api/issuer-status?fund=0x...  ->  {"status":"OK"} | {"status":"FAILED"}
+/// This is the "outside API" the Chainlink CRE workflow reads. In chain mode it
+/// reflects IssuerStub.failed() on Arc, so the stand-in issuer has one source of truth.
+export async function GET(req: Request) {
+  const fund = new URL(req.url).searchParams.get("fund") ?? undefined;
+  try {
+    const failed = await readFailed();
+    return NextResponse.json({ status: failed ? "FAILED" : "OK", fund, source: serverEnv.mode === "mock" ? "mock" : "IssuerStub on Arc testnet", at: new Date().toISOString() });
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 502 });
+  }
+}
+
+/// POST {"failed": true|false}  (demo switch; optional DEMO_TOKEN via x-demo-token header)
+export async function POST(req: Request) {
+  if (serverEnv.demoToken && req.headers.get("x-demo-token") !== serverEnv.demoToken) {
+    return NextResponse.json({ error: "Demo key required" }, { status: 401 });
+  }
+  let body: { failed?: unknown };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Body must be JSON" }, { status: 400 });
+  }
+  if (typeof body.failed !== "boolean") return NextResponse.json({ error: "failed must be a boolean" }, { status: 400 });
+
+  if (serverEnv.mode === "mock") {
+    setMockIssuerFailed(body.failed);
+    return NextResponse.json({ status: body.failed ? "FAILED" : "OK" });
+  }
+  const { opsWallet, arcPublic } = await import("@/server/arc");
+  const wallet = opsWallet();
+  if (!wallet || !serverEnv.issuer) return NextResponse.json({ error: "Server has no ops wallet configured" }, { status: 503 });
+  try {
+    const hash = await wallet.writeContract({ address: serverEnv.issuer, abi: issuerAbi, functionName: "setFailed", args: [body.failed] });
+    const receipt = await arcPublic.waitForTransactionReceipt({ hash });
+    if (receipt.status !== "success") throw new Error("setFailed reverted");
+    return NextResponse.json({ status: body.failed ? "FAILED" : "OK", hash });
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 502 });
+  }
+}
+
+async function readFailed(): Promise<boolean> {
+  if (serverEnv.mode === "mock") return mockIssuerFailed();
+  if (!serverEnv.issuer) throw new Error("NEXT_PUBLIC_ISSUER_STUB is not set");
+  const { arcPublic } = await import("@/server/arc");
+  return arcPublic.readContract({ address: serverEnv.issuer, abi: issuerAbi, functionName: "failed" });
+}
