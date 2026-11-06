@@ -16,9 +16,9 @@ export default function Security() {
         <div className="card max-w-3xl p-6">
           <DataRows
             rows={[
-              ["M1 fixed", "LP exit before a writedown", "LP flows pause until markImpaired"],
-              ["M2 fixed", "Future-dated NAV could freeze a fund", "reports over 5 min ahead rejected"],
-              ["M3 fixed", "Shared CRE forwarder", "optional workflow owner and id pinning"],
+              ["M1 fixed", "Liquidity provider (LP) exit before a writedown", "LP flows pause until markImpaired"],
+              ["M2 fixed", "Future-dated net asset value (NAV) could freeze a fund", "reports over 5 min ahead rejected"],
+              ["M3 fixed", "Shared Chainlink Runtime Environment (CRE) forwarder", "optional workflow owner and id pinning"],
               ["M4 fixed", "Settlement on a bad NAV", "settle reverts, retry later"],
               ["M5 fixed", "Allowlist skipped on depositAndSell", "both entry paths enforce it"],
               ["H1 open", "LP gain sniping at settlement", "accepted for testnet, see below"],

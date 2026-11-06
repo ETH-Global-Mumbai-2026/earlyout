@@ -27,7 +27,7 @@ export default function Distributors() {
             Each quote names its four terms. No hidden fee, no negotiation, the same formula for every holder.
           </Tile>
           <Tile index="05" title="Failure handled in one transaction">
-            If an issuer fails, trading halts and the writedown reaches every LP at once.
+            If an issuer fails, trading halts and the writedown reaches every liquidity provider (LP) at once.
           </Tile>
           <Tile index="06" title="USDC settlement on Arc">
             Sellers receive USDC in the same transaction. Gas is paid in USDC too.
@@ -43,7 +43,7 @@ export default function Distributors() {
   .orderBy(asc("settleAt"))
   .fetch()`}</Code>
       </Section>
-      <Section eyebrow="Talk to us" title="Listing a fund takes one registry call." lede="Tell us the fund, its settlement delay and window, and its NAV feed. We set the exposure cap and credit term with you.">
+      <Section eyebrow="Talk to us" title="Listing a fund takes one registry call." lede="Tell us the fund, its settlement delay and window, and its net asset value (NAV) feed. We set the exposure cap and credit term with you.">
         <div className="flex flex-wrap gap-3">
           <CTA href={`${REPO}/issues/new?title=Fund%20listing%20request`}>Request a listing</CTA>
           <CTA href="/developers" variant="secondary">

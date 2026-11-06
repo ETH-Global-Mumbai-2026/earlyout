@@ -8,8 +8,8 @@ const faq: [string, string][] = [
   ["Who can sell?", "Holders whose wallet the fund's distributor has approved. The fund token and the claim token both enforce an allowlist, as real tokenized funds do."],
   ["What happens to my fund tokens?", "They join the issuer's redemption queue on your behalf. The claim to the payout goes to the vault, and you keep the USDC."],
   ["Why is the spread wider for longer waits?", "The time term grows with the square root of the time to payout, the way price uncertainty grows. A 15-minute demo claim costs a few basis points; a 90-day claim about 4%."],
-  ["What if the issuer fails?", "The oracle reports it, every quote halts, and anyone can write the fund's claims down to their recovery value inside the vault's accounting, so every LP's share price falls in one transaction."],
-  ["Where does the NAV come from?", "Chainlink's ACRED NAV feed on Ethereum mainnet, carried to Arc by a Chainlink CRE workflow that also reads the issuer's status."],
+  ["What if the issuer fails?", "The oracle reports it, every quote halts, and anyone can write the fund's claims down to their recovery value inside the vault's accounting, so every liquidity provider (LP)'s share price falls in one transaction."],
+  ["Where does the NAV come from?", "Each fund's Chainlink NAV feed on Ethereum mainnet, carried to Arc by a Chainlink Runtime Environment (CRE) workflow that also reads the issuer's status."],
   ["Can I see every open claim?", "Yes. The Book screen reads them from Arkiv, and anyone can run the same query against Arkiv's public RPC."],
 ];
 
@@ -19,7 +19,7 @@ export default function HowItWorks() {
       <PageHeader
         eyebrow="How it works"
         title="From pending redemption to USDC in one transaction."
-        lede="Earlyout turns a redemption request into a claim token, prices it against the fund's real NAV, and lets a USDC vault on Arc buy it."
+        lede="Earlyout turns a redemption request into a claim token, prices it against the fund's real net asset value (NAV), and lets a USDC (USD Coin) vault on Arc buy it."
       />
       <Section eyebrow="The flow" title="Five steps, three of them automatic.">
         <Grid cols={3}>
@@ -27,7 +27,7 @@ export default function HowItWorks() {
             ClaimWrapper takes the tokens and files a redemption with the issuer. The payout date is the fund&apos;s settlement delay, rounded up to its window.
           </Tile>
           <Tile index="02" title="Mint a claim">
-            One ERC-1155 claim id per fund and payout date, so claims for the same date are interchangeable.
+            One ERC-1155 (multi-token standard) claim id per fund and payout date, so claims for the same date are interchangeable.
           </Tile>
           <Tile index="03" title="Quote and sell">
             The vault quotes a verdict and a price. On BUY it takes the claim first, then pays USDC.
@@ -43,7 +43,7 @@ export default function HowItWorks() {
           </Tile>
         </Grid>
       </Section>
-      <Section eyebrow="Pricing" title="Four terms, all on screen." lede="The seller receives NAV × amount × (1 minus the spread).">
+      <Section eyebrow="Pricing" title="Four terms, all on screen." lede="The seller receives NAV × amount × (1 minus the spread). Terms are in basis points (bps): 100 bps is 1%.">
         <div className="grid gap-4 lg:grid-cols-2">
         <div className="card p-6">
           <DataRows

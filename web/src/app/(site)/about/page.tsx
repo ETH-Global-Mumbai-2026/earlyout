@@ -25,7 +25,7 @@ export default function About() {
               ["Built", "ETHGlobal Mumbai", "November 2026"],
               ["Network", "Arc testnet", "chain 5042002"],
               ["Contracts", "7 + deploy script", "63 tests"],
-              ["Partners", "Arc, Chainlink CRE, Arkiv", "hackathon tracks"],
+              ["Partners", "Arc, Chainlink Runtime Environment (CRE), Arkiv", "hackathon tracks"],
               ["Licence", "MIT", "open source"],
             ]}
           />
