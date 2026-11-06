@@ -1,5 +1,5 @@
 import { configured, missingAddresses } from "@/lib/addresses";
-import { Notice } from "./ui";
+import { Notice } from "./ui/primitives";
 
 export function ConfigNotice() {
   if (configured) return null;

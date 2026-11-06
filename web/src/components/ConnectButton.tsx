@@ -4,7 +4,7 @@ import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
 import { arcTestnet } from "@/lib/chain";
 import { MODE } from "@/lib/addresses";
 import { shortAddr } from "@/lib/format";
-import { Button } from "./ui";
+import { Button } from "./ui/primitives";
 
 export function ConnectButton() {
   const { address, isConnected, chainId } = useAccount();

@@ -3,7 +3,7 @@
 import type { Quote } from "@/lib/types";
 import { bpsSum } from "@/lib/types";
 import { fmtBps, fmtDate, fmtNav, fmtUsdc, timeAgo, timeUntil } from "@/lib/format";
-import { Card, Row, Spinner, Swap, VerdictPill } from "./ui";
+import { Card, Row, Spinner, Swap, VerdictPill } from "./ui/primitives";
 import { useNow } from "@/hooks/useNow";
 
 export function QuoteCard({ quote, pending, symbol }: { quote?: Quote; pending: boolean; symbol: string }) {
