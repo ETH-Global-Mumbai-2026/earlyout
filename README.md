@@ -34,7 +34,7 @@ Spread = base + vault usage + volatility × √(time to payout) + issuer credit.
 ```mermaid
 flowchart LR
   subgraph eth[Ethereum mainnet]
-    feed[Chainlink ACRED NAV feed]
+    feed[Chainlink NAV feeds, one per fund]
   end
   subgraph api[Earlyout backend, Next.js]
     status[/api/issuer-status]
@@ -80,16 +80,24 @@ flowchart LR
 | Vault | [`0x7A40b36b012DC19b1f42dd68C13F4daE312e2319`](https://explorer.testnet.arc.io/address/0x7A40b36b012DC19b1f42dd68C13F4daE312e2319) | quote, quoteFund, sell, buy, settle, markImpaired |
 | ACRED (stand-in) | [`0xCd5DE841b0f781A866cA6E978A19d6d5431683E2`](https://explorer.testnet.arc.io/address/0xCd5DE841b0f781A866cA6E978A19d6d5431683E2) | 90-day payout, 1-day window |
 | ACREDd (demo window) | [`0x8d9FF934E08DA9f8AEbF2280dAD218e8d176d06F`](https://explorer.testnet.arc.io/address/0x8d9FF934E08DA9f8AEbF2280dAD218e8d176d06F) | 15-minute payout, 5-minute window |
+| JAAA (stand-in) | [`0x7ED73c4653aCf10830f2c5811349bc1d6bF012e1`](https://explorer.testnet.arc.io/address/0x7ED73c4653aCf10830f2c5811349bc1d6bF012e1) | 7-day payout; NAV from its Chainlink feed |
+| JTRSY (stand-in) | [`0xAc28d2d4902a705f33C43816599BCaFD3bb194b3`](https://explorer.testnet.arc.io/address/0xAc28d2d4902a705f33C43816599BCaFD3bb194b3) | 1-day payout; NAV from its Chainlink feed |
+| USTB (stand-in) | [`0x09367DC8779b7462f41d21ff2782c15D73f7B7D5`](https://explorer.testnet.arc.io/address/0x09367DC8779b7462f41d21ff2782c15D73f7B7D5) | 1-day payout; NAV from its Chainlink feed |
+| USCC (stand-in) | [`0x3ff6d44727Cddd81271ca00A1e590818a24Ea3c9`](https://explorer.testnet.arc.io/address/0x3ff6d44727Cddd81271ca00A1e590818a24Ea3c9) | 3-day payout; NAV from its Chainlink feed |
+| USTBL (stand-in) | [`0x577Ed63097665601609fC9381Ca229F15AeD30B6`](https://explorer.testnet.arc.io/address/0x577Ed63097665601609fC9381Ca229F15AeD30B6) | 1-day payout; NAV from its Chainlink feed |
+| SAFO (stand-in) | [`0x5F10C72fF50fB94348d0F16234551f6872a857a2`](https://explorer.testnet.arc.io/address/0x5F10C72fF50fB94348d0F16234551f6872a857a2) | 1-day payout; NAV from its Chainlink feed |
+| CASH+ (stand-in) | [`0x1869711fde2e7d089F3058228cF3AFF4C16a9658`](https://explorer.testnet.arc.io/address/0x1869711fde2e7d089F3058228cF3AFF4C16a9658) | 1-day payout; NAV from its Chainlink feed |
+| Treasury+ (stand-in) | [`0xf767D26EE85e09389f410F28728f0Ddca37610e8`](https://explorer.testnet.arc.io/address/0xf767D26EE85e09389f410F28728f0Ddca37610e8) | 1-day payout; NAV from its Chainlink feed |
 
 USDC on Arc: `0x3600000000000000000000000000000000000000`. Deployed at block 71057910 from `0xC9007Afa7c9eCd6b0D9da62e3B820f69F730aFf3` and owned by `0xbc832e4FC6a9CBd9c35884Bc744e6499cBFf537B`. Explorer: https://explorer.testnet.arc.io.
 
-Contracts were drafted with Claude Code, then installed, tested, security-reviewed and fixed in Arc Studio (five Medium findings fixed; prompts and the full report in `docs/studio/`), and pulled into `contracts/` with `arc-studio pull`. 63 Foundry tests. Deployed by Arc Studio from a Circle developer-controlled wallet created in the Studio workspace (`0xC9007Afa7c9eCd6b0D9da62e3B820f69F730aFf3`), following `script/Deploy.s.sol` step by step. The final transactions hand ownership of all eight contracts and the oracle forwarder role to our ops wallet, so the deployer owns nothing. All 34 transactions are listed in `docs/studio/04-deployment-transactions.md`.
+Contracts were drafted with Claude Code, then installed, tested, security-reviewed and fixed in Arc Studio (five Medium findings fixed; prompts and the full report in `docs/studio/`), and pulled into `contracts/` with `arc-studio pull`. 63 Foundry tests. Deployed by Arc Studio from a Circle developer-controlled wallet created in the Studio workspace (`0xC9007Afa7c9eCd6b0D9da62e3B820f69F730aFf3`), following `script/Deploy.s.sol` step by step. The final transactions hand ownership of all eight contracts and the oracle forwarder role to our ops wallet, so the deployer owns nothing. All 34 transactions are listed in `docs/studio/04-deployment-transactions.md`. A second Studio run on 7 November deployed eight more fund stand-ins from the same wallet and handed each to the ops wallet (prompt and result in `docs/studio/06-more-funds.md`, addresses in `contracts/deployments/arc-testnet-funds.json`); the ops wallet then listed them in FundRegistry and reported each fund's Chainlink NAV.
 
 ## What is real and what is a stand-in
 
 | Real | Stand-in, and why |
 |---|---|
-| Fund NAV: Chainlink "ACRED NAV" feed on Ethereum mainnet, `0x35DDfB90011E686CCf837a6819562705076207EB`, 8 decimals | Fund tokens: real ones only transfer between issuer-approved wallets |
+| Fund NAV: Chainlink NAV feeds on Ethereum mainnet, one per fund: ACRED `0x35DDfB90011E686CCf837a6819562705076207EB` (8 decimals) and eight NAVLink feeds listed in `web/src/lib/glossary.ts` | Fund tokens: real ones only transfer between issuer-approved wallets |
 | USDC on Arc, all Earlyout contracts, the Arkiv book | Issuer contract: same reason |
 | The CRE workflow and its report path | Issuer status API: in production this is the issuer's attestation |
 
@@ -107,7 +115,7 @@ It runs `select().from(earlyout.claims).where(eq("status","open")).ownedBy(write
 
 ## Chainlink CRE
 
-`cre/nav-bridge`: cron trigger, `latestRoundData()` and `decimals()` from the mainnet feed, GET `/api/issuer-status`, encode `(fund, nav, navDecimals, updatedAt, status)`, `writeReport` to NavOracle on `arc-testnet`. Simulation output is in [`cre/README.md`](cre/README.md).
+`cre/nav-bridge`: cron trigger; for each of the ten listed funds, `latestRoundData()` and `decimals()` from its mainnet NAV feed, GET `/api/issuer-status`, encode `(fund, nav, navDecimals, updatedAt, status)`, `writeReport` to NavOracle on `arc-testnet`. Simulation output is in [`cre/README.md`](cre/README.md).
 
 ## Repository layout
 
@@ -136,7 +144,8 @@ Contracts: `cd contracts && forge test`. Deploy: `forge script script/Deploy.s.s
 - While a wallet we control is the oracle forwarder, it can overwrite a status with a same-timestamp report. This ends when the CRE forwarder takes over.
 - Settlement needs a keeper to call `settle` at maturity. Nothing settles on its own.
 - The demo switches on the Status screen act on the stand-in issuer, testnet only, and can be gated with `DEMO_TOKEN`.
-- Only two funds are listed. The oracle and pricing handle any feed decimals; adding a fund is one registry call.
+- Ten listings fill FundRegistry's limit of ten. Earlyout is for funds that redeem on a schedule (ACRED, and ACREDd as its 15-minute demo). The other eight already pay within days, so the app shows them for comparison and does not offer to buy them; their payout terms on Arc are illustrative. The contract itself would still quote them if called directly.
+- The CRE broadcast logs below predate the eight new funds; `cre/nav-bridge/config.*.json` now carries all ten.
 
 ## Build timeline
 
@@ -157,6 +166,8 @@ We built and reviewed locally and committed in topic-sized batches, so most comm
 | 6 Nov, 23:14 to 23:16 | Three CRE broadcasts: issuer OK, FAILED, restored | [OK](https://explorer.testnet.arc.io/tx/0xbeb579c3af949e857109a542ee9a03374f853dd7399062f2f7cd9ab7dba5622f), [FAILED](https://explorer.testnet.arc.io/tx/0x4fd0f3d19eb5b105d84696f71fa9fae2b026a0df552e03dd827e31986b2c5df7), [restored](https://explorer.testnet.arc.io/tx/0xc2ba3ffbce7b1d6543bc80251919a17446fe9de133f3670cd44a5875a5b2540f) |
 | 6 Nov, 23:18 and 23:33 | Reviewed work committed in topic-sized commits; CI passes | GitHub Actions runs |
 | 7 Nov, 00:00 | Arc Studio builds an app in its own workspace against the deployed contracts | `studio-app/`, `docs/studio/05-studio-web-app.md` |
+| 7 Nov, about 02:00 | Arc Studio deploys eight more fund stand-ins, each priced from its own Chainlink NAV feed | [first tx](https://explorer.testnet.arc.io/tx/0x50ce522234e26b921cd7e8c42d48f682fced7e8ec2eefe750cda961ac919cd50), `docs/studio/06-more-funds.md` |
+| 7 Nov, about 02:10 | Ops wallet lists them in FundRegistry and reports their Chainlink NAVs | [first listing](https://explorer.testnet.arc.io/tx/0xf2a12e5d056e8790fffa0bb6d041b0f136a80c93c4ea4c593b3775afa4949918) |
 
 From 7 November on, work is committed as it happens.
 
@@ -166,7 +177,7 @@ From 7 November on, work is committed as it happens.
 
 **Arkiv, Build on Arkiv (from scratch).** The public book of open claims lives on Arkiv. Each sale on Arc becomes an entity that expires at its payout date; a fund directory expires a day after its last refresh; NAV history is kept for 30 days. The Book screen reads only from Arkiv, filtered to our writer wallet. Feedback is in `arkiv/friction.md`; the main point: a named schema does not stop another wallet writing entities under it, so every read must filter by owner.
 
-**Chainlink, Best workflow with CRE.** `cre/nav-bridge` reads the ACRED NAV feed on Ethereum mainnet and our issuer status API, and writes a signed report to NavOracle on Arc through the Keystone forwarder. The vault halts on what it writes. Simulated with `--broadcast` three times, including the failure path; logs in `cre/README.md`. Feedback: simulating with `--broadcast` against Arc worked first time once the oracle pointed at the mock forwarder. One snag: zod's `z.string().url()` in our config schema rejected a valid https URL inside the workflow runtime, which surfaced only as "Invalid URL" at engine start; a plain regex works.
+**Chainlink, Best workflow with CRE.** `cre/nav-bridge` reads the Chainlink NAV feed of each of the ten listed funds on Ethereum mainnet (ACRED, plus eight NAVLink feeds such as Janus Henderson's JAAA) and our issuer status API, and writes a signed report to NavOracle on Arc through the Keystone forwarder. The vault halts on what it writes. Simulated with `--broadcast` three times, including the failure path; logs in `cre/README.md`. Feedback: simulating with `--broadcast` against Arc worked first time once the oracle pointed at the mock forwarder. One snag: zod's `z.string().url()` in our config schema rejected a valid https URL inside the workflow runtime, which surfaced only as "Invalid URL" at engine start; a plain regex works.
 
 ## How we used AI
 

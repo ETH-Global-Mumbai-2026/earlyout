@@ -1,6 +1,6 @@
 # Chainlink CRE: the NAV bridge
 
-One workflow, `nav-bridge`, on a cron trigger. For each configured fund it reads the Chainlink NAV feed on Ethereum mainnet, asks the issuer status API, and writes a signed report to NavOracle on Arc testnet through the Keystone forwarder. The report encoding is `abi.encode(address fund, uint256 nav, uint8 navDecimals, uint64 updatedAt, uint8 status)`, the same one the stand-in pusher in `web/src/server/nav.ts` uses, so the contracts cannot tell the two apart.
+One workflow, `nav-bridge`, on a cron trigger. For each configured fund (ten since 7 November: ACRED, ACREDd and eight funds with Chainlink NAVLink feeds) it reads that fund's Chainlink NAV feed on Ethereum mainnet, asks the issuer status API, and writes a signed report to NavOracle on Arc testnet through the Keystone forwarder. The report encoding is `abi.encode(address fund, uint256 nav, uint8 navDecimals, uint64 updatedAt, uint8 status)`, the same one the stand-in pusher in `web/src/server/nav.ts` uses, so the contracts cannot tell the two apart.
 
 ## Run it
 
