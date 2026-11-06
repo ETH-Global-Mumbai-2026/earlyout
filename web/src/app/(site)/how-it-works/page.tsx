@@ -1,3 +1,4 @@
+import { SaleFlowDiagram, VerdictDiagram } from "@/components/site/Diagrams";
 import type { Metadata } from "next";
 import { CTA, DataRows, Grid, PageHeader, Section, Tile } from "@/components/site/blocks";
 import { SpreadCurve } from "@/components/viz/SpreadCurve";
@@ -22,6 +23,9 @@ export default function HowItWorks() {
         lede="Earlyout turns a redemption request into a claim token, prices it against the fund's real net asset value (NAV), and lets a USDC (USD Coin) vault on Arc buy it."
       />
       <Section eyebrow="The flow" title="Five steps, three of them automatic.">
+        <div className="card mb-6 p-4 sm:p-8">
+          <SaleFlowDiagram />
+        </div>
         <Grid cols={3}>
           <Tile index="01" title="Deposit fund tokens">
             ClaimWrapper takes the tokens and files a redemption with the issuer. The payout date is the fund&apos;s settlement delay, rounded up to its window.
@@ -62,6 +66,9 @@ export default function HowItWorks() {
         </div>
       </Section>
       <Section eyebrow="Safety rules" title="What the contracts refuse to do.">
+        <div className="card mb-6 p-4 sm:p-8">
+          <VerdictDiagram />
+        </div>
         <div className="card max-w-3xl p-6">
           <DataRows
             rows={[

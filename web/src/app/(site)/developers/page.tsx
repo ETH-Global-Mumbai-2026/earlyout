@@ -1,3 +1,4 @@
+import { OracleDiagram } from "@/components/site/Diagrams";
 import type { Metadata } from "next";
 import { ARC_EXPLORER, CTA, Code, PageHeader, Section, contracts } from "@/components/site/blocks";
 import { REPO, STUDIO } from "@/components/site/links";
@@ -52,6 +53,9 @@ POST /api/nav/push                   carry the Chainlink NAV and issuer status t
 POST /api/arkiv/sync                 index new Arc events into Arkiv`}</Code>
       </Section>
       <Section eyebrow="Oracle reports" title="One encoding for CRE and every other writer.">
+        <div className="card mb-6 p-4 sm:p-8">
+          <OracleDiagram />
+        </div>
         <Code>{`report = abi.encode(address fund, uint256 nav, uint8 navDecimals, uint64 updatedAt, uint8 status)
 // status 0 = OK, 1 = FAILED. Equal updatedAt accepted, older rejected, more than 5 minutes ahead rejected.
 // The CRE workflow is in cre/nav-bridge: cron, mainnet feed read, issuer API, writeReport to arc-testnet.`}</Code>
