@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { AmountInput } from "@/components/AmountInput";
 import { FundPicker } from "@/components/FundPicker";
 import { QuoteCard } from "@/components/QuoteCard";
-import { Button, Notice, Sheet, Spinner } from "@/components/ui";
+import { Button, Notice, Sheet, Spinner } from "@/components/ui/primitives";
 import { errorMessage, useAccountState, useFunds, useQuote, useSell, useTryAsJudge, useWallet } from "@/hooks/useEarlyout";
 import { MODE } from "@/lib/addresses";
 import { fmtUsdc, parseUnitsSafe } from "@/lib/format";
@@ -41,7 +41,8 @@ export default function SellPage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="t-display">Sell your pending redemption</h1>
+        <div className="t-eyebrow">01 · Sell</div>
+        <h1 className="t-display mt-2">Sell your pending redemption</h1>
         <p className="t-body mt-2 text-muted">
           Pick a fund and an amount. You see the verdict and the price before anything moves. USDC arrives in the same transaction.
         </p>

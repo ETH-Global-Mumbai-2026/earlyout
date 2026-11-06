@@ -1,7 +1,8 @@
 "use client";
 
-import { Button, Card, Notice, Row, Spinner } from "@/components/ui";
-import { errorMessage, useFunds, useIssuerFailed, useMarkImpaired, usePushNav, useSetIssuerFailed, useWallet } from "@/hooks/useEarlyout";
+import { Button, Card, Notice, Row, Spinner } from "@/components/ui/primitives";
+import { demoKey, errorMessage, setDemoKey, useFunds, useIssuerFailed, useMarkImpaired, usePushNav, useSetIssuerFailed, useWallet } from "@/hooks/useEarlyout";
+import { useState } from "react";
 import { fmtDate, fmtDuration, fmtNav, fmtUsdc, timeAgo } from "@/lib/format";
 import { MODE } from "@/lib/addresses";
 import { useNow } from "@/hooks/useNow";
@@ -13,12 +14,14 @@ export default function StatusPage() {
   const impair = useMarkImpaired();
   const wallet = useWallet();
   const pushNav = usePushNav();
+  const [key, setKey] = useState(() => demoKey());
   const now = useNow();
 
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="t-display">Status</h1>
+        <div className="t-eyebrow">04 · Status</div>
+        <h1 className="t-display mt-2">Status</h1>
         <p className="t-body mt-2 text-muted">
           NAV comes from the Chainlink ACRED NAV feed on Ethereum mainnet, carried to Arc by a Chainlink CRE workflow. Issuer status rides in the same report.
         </p>
@@ -71,7 +74,25 @@ export default function StatusPage() {
           The issuer here is a stand-in. This switch flips what the issuer status API returns, which the CRE workflow carries into the oracle on its next run.
           {MODE === "chain" && " It also sets the stand-in issuer on Arc, so settlement stops."}
         </p>
-        <div className="mt-3 flex items-center justify-between">
+        {MODE === "chain" && (
+          <label className="control mt-3 flex items-center gap-2 px-3 py-2">
+            <span className="t-eyebrow shrink-0">Demo key</span>
+            <input
+              type="text"
+              autoComplete="off"
+              spellCheck={false}
+              value={key}
+              onChange={(e) => {
+                setKey(e.target.value);
+                setDemoKey(e.target.value);
+              }}
+              placeholder="Required to flip the issuer"
+              className="font-mono text-sm"
+              aria-label="Demo key"
+            />
+          </label>
+        )}
+        <div className="mt-3 flex items-center justify-between gap-3">
           <span className="t-body">
             Issuer status: <strong>{failed.data === undefined ? "…" : failed.data ? "FAILED" : "OK"}</strong>
           </span>

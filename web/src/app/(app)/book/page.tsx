@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Card, Notice, Segmented, Spinner } from "@/components/ui";
+import { Card, Notice, Segmented, Spinner } from "@/components/ui/primitives";
 import { useNow } from "@/hooks/useNow";
 import { txUrl } from "@/lib/chain";
 import { fmtBps, fmtDate, fmtNav, fmtUnits, fmtUsdc, shortAddr, timeUntil } from "@/lib/format";
@@ -27,7 +27,8 @@ export default function BookPage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="t-display">Book</h1>
+        <div className="t-eyebrow">02 · Book</div>
+        <h1 className="t-display mt-2">Book</h1>
         <p className="t-body mt-2 text-muted">
           Every open claim, with its price and the four reasons behind it. Read from Arkiv, so it exists without our server, and each entry expires on its payout date.
         </p>

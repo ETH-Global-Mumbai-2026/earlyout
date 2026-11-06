@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { AmountInput } from "@/components/AmountInput";
-import { Button, Card, Notice, Segmented, Spinner, Stat } from "@/components/ui";
+import { Button, Card, Notice, Segmented, Spinner, Stat } from "@/components/ui/primitives";
 import { errorMessage, useAccountState, useDeposit, useVault, useWallet, useWithdraw } from "@/hooks/useEarlyout";
 import { fmtUsdc, parseUnitsSafe } from "@/lib/format";
 
@@ -35,7 +35,8 @@ export default function VaultPage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="t-display">Vault</h1>
+        <div className="t-eyebrow">03 · Vault</div>
+        <h1 className="t-display mt-2">Vault</h1>
         <p className="t-body mt-2 text-muted">LPs fund the vault in USDC and earn the spread. Claims are held at cost until they pay.</p>
       </header>
 
