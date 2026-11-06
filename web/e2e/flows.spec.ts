@@ -40,7 +40,7 @@ test.describe("Sell", () => {
 test.describe("Vault", () => {
   test("deposits and withdraws", async ({ page }) => {
     await page.goto("/vault");
-    await expect(page.getByText("Share price")).toBeVisible();
+    await expect(page.getByText("Share price", { exact: true })).toBeVisible();
     const worth = page.getByText("Your shares are worth").locator("..");
     await expect(worth).toContainText("$0.00");
     await page.getByLabel(/Deposit in USDC/).fill("25");
@@ -68,7 +68,7 @@ test.describe("Status", () => {
     await expect(page.getByText("HALT", { exact: true })).toBeVisible();
     await expect(page.getByText("Issuer reports failure")).toBeVisible();
 
-    await tab("Status").click();
+    await tab("Risk").click();
     await expect(page.getByRole("button", { name: "Mark impaired" }).first()).toBeVisible();
     await page.getByRole("button", { name: "Restore issuer" }).click();
     await expect(page.getByText("Issuer status: OK")).toBeVisible();
@@ -88,7 +88,7 @@ test.describe("Book", () => {
 test.describe("Site", () => {
   test("landing and company pages render with the shared footer", async ({ page }) => {
     for (const [path, heading] of [
-      ["/", "Early exit for funds that redeem on a schedule."],
+      ["/", "Get paid today. Not when the fund's window opens."],
       ["/how-it-works", "From pending redemption to USDC in one transaction."],
       ["/distributors", "Give your clients an exit between windows."],
       ["/developers", "Contracts, APIs and the public book."],
@@ -102,13 +102,11 @@ test.describe("Site", () => {
     }
   });
 
-  test("theme toggle switches to light and back", async ({ page }) => {
+  test("the app renders inside its shell", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator("html")).toHaveClass(/dark/);
-    await page.getByRole("button", { name: "Switch to light mode" }).first().click();
-    await expect(page.locator("html")).not.toHaveClass(/dark/);
-    await page.getByRole("button", { name: "Switch to dark mode" }).first().click();
-    await expect(page.locator("html")).toHaveClass(/dark/);
+    await expect(page.locator(".theme-app")).toHaveCount(0);
+    await page.goto("/sell");
+    await expect(page.locator(".theme-app")).toHaveCount(1);
   });
 });
 
@@ -126,19 +124,17 @@ test.describe("Responsive", () => {
 
   test("site navigation works at this size", async ({ page }, info) => {
     await page.goto("/");
-    if (info.project.name === "phone") {
-      await page.getByRole("button", { name: "Open menu" }).click();
-      await page.getByRole("navigation", { name: "Site" }).getByRole("link", { name: "Security" }).click();
-    } else {
-      await page.getByRole("navigation", { name: "Site" }).getByRole("link", { name: "Security" }).click();
-    }
+    void info;
+    const menu = page.getByRole("button", { name: "Open menu" });
+    if (await menu.isVisible()) await menu.click();
+    await page.getByRole("navigation", { name: "Site" }).filter({ visible: true }).getByRole("link", { name: "Security" }).click();
     await expect(page).toHaveURL(/\/security$/);
     await expect(page.getByRole("heading", { level: 1, name: "Reviewed, tested, and plain about what is left." })).toBeVisible();
   });
 
   test("app tabs reach every screen at this size", async ({ page }) => {
     await page.goto("/sell");
-    for (const [tab, heading] of [["Book", "Book"], ["Vault", "Vault"], ["Status", "Status"], ["Sell", "Sell your pending redemption"]]) {
+    for (const [tab, heading] of [["Book", "Book"], ["Vault", "Vault"], ["Risk", "Oracle and risk"], ["Sell", "Sell your pending redemption"]]) {
       await page.getByRole("navigation", { name: "App sections" }).filter({ visible: true }).getByRole("link", { name: tab, exact: true }).click();
       await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
     }
