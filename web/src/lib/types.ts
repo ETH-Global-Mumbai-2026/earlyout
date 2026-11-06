@@ -15,6 +15,8 @@ export type Fund = {
   maxAge: number;
   capUsdc: bigint;
   deployedUsdc: bigint;
+  volBps: number;
+  creditBps: number;
 };
 
 export type Quote = {

@@ -65,6 +65,8 @@ async function loadFunds(): Promise<Fund[]> {
         maxAge: Number(terms.maxAge),
         capUsdc: terms.exposureCapUsdc,
         deployedUsdc: cost,
+        volBps: Number(terms.volBps),
+        creditBps: Number(terms.creditBps),
       };
     }),
   );

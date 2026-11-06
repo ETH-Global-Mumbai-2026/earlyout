@@ -10,7 +10,7 @@ const NAV = 1113_7732n * 10n ** 14n; // 1113.7732 at 18dp, the ACRED feed on Nov
 const BPS = 10_000n;
 const YEAR = 365 * 86400;
 
-type MockFund = Fund & { volBps: number; creditBps: number; recoveryBps: number };
+type MockFund = Fund & { recoveryBps: number };
 
 function fund(address: Address, symbol: string, name: string, delay: number, window: number): MockFund {
   return {
@@ -40,8 +40,8 @@ const state = {
   baseBps: 50,
   utilSlopeBps: 300,
   issuerFailed: false,
-  idle: 5_000_000n,
-  totalSupply: 5_000_000n * 10n ** 3n,
+  idle: 100_000_000n,
+  totalSupply: 100_000_000n * 10n ** 3n,
   user: { usdc: 250_000_000n, shares: 0n, balances: {} as Record<string, bigint> },
   nonce: 1,
 };
