@@ -13,6 +13,17 @@ One wallet writes, `0x343F684dAFFf216CDf38a40888662148eBa07Fd7` on the Rabdi tes
 
 Every write is a transaction on Rabdi, paid in tGLM.
 
+## Who can edit each entity, and when it expires
+
+| Entity | Who can edit | Expires | Why that fits |
+|---|---|---|---|
+| `earlyout.claims` | only the writer wallet, which patches `status` and `holder` when Arc says a claim was bought or settled | at the claim's payout date (`ExpirationTime.atDate`) | an open claim stops being open the moment it is due, so the book never lists a claim nobody can buy |
+| `earlyout.funds` | only the writer wallet, on every NAV update | one day after the last refresh (`extendEntity`) | if our indexer stops, the directory vanishes instead of showing a stale NAV |
+| `earlyout.navs` | nobody after creation | 30 days | NAV history is an append-only record |
+| `earlyout.cursor` | only the writer wallet | 180 days | the indexer's position on Arc, so a restart resumes where it stopped |
+
+Arkiv itself does not stop another wallet from creating entities tagged with our schema names. Every read therefore filters with `ownedBy(writer)`, and the Book screen names the writer wallet under the list.
+
 ## What each Arkiv feature changes on screen
 
 | Arkiv feature | Where it is used | What the user sees |

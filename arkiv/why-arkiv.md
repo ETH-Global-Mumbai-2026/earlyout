@@ -11,3 +11,19 @@ Three properties mattered:
 3. **Writes are attributable.** Each entity carries the writer's address. The README names that wallet, so a reader can check that the book was written by Earlyout and not by anyone else.
 
 What Arkiv is not used for: anything a contract needs to read. Pricing, caps and halts live on Arc, where they are enforced. Arkiv is the window onto that state for the people who have to act on it.
+
+## If we swapped Arkiv for Postgres, what would users lose?
+
+- **Reading without us.** Today a distributor runs one query against Arkiv's public RPC and gets the live book (see the README). With Postgres they would need an API from us, an account, and our server to be up.
+- **Proof of who wrote it.** Every entity carries its owner. The Book filters on Earlyout's writer wallet, `0x343F684dAFFf216CDf38a40888662148eBa07Fd7`, so a reader can check that an entry came from us. A row in our database proves nothing to an outsider.
+- **Cleanup they can trust.** A claim expires at its payout date on Arkiv itself. In Postgres, "settled claims disappear" is a promise about our cron job.
+- **History they can audit.** Every create, patch and extension is a transaction on Rabdi, visible in the explorer.
+
+## What we kept off Arkiv, and why
+
+| Kept off | Where it lives | Why |
+|---|---|---|
+| Prices, caps, halts, the writedown | Arc contracts | They must be enforced, not just recorded. Arkiv is the window onto that state, never the source of it |
+| USDC balances and claim ownership | Arc | Money and tokens settle on Arc |
+| Wallet allowlists, KYC status | the distributor's own systems, mirrored as an on-chain allowlist | Identity data must not be public, and Arkiv entities are public |
+| Private keys, API keys, the demo key | server environment only | Secrets never go into a public database |
