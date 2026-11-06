@@ -27,7 +27,7 @@ export function RiskStrip() {
     items.push(["lp", <>Liquidity provider (<Abbr k="LP" />) share price</>, fmtUsdc(v.sharePrice, true).replace("$", "")]);
   }
   return (
-    <div className="border-b border-hairline bg-surface" aria-label="Live market data">
+    <div className="material border-b border-hairline" aria-label="Live market data">
       <div className="mx-auto flex max-w-[1320px] gap-7 overflow-x-auto whitespace-nowrap px-4 py-2.5 text-[12px] text-muted sm:px-6">
         <span className="inline-flex items-center gap-1.5 font-medium text-ink-2">
           <span className={`size-1.5 rounded-full ${failed ? "bg-halt" : "bg-buy"}`} />

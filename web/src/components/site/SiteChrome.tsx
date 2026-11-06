@@ -96,7 +96,7 @@ export function SiteNav() {
 
 export function SiteFooter() {
   return (
-    <footer className="mt-8 border-t border-hairline bg-canvas">
+    <footer className="material mt-8 border-t border-hairline">
       <div className="mx-auto grid max-w-6xl gap-10 px-5 py-12 sm:px-8 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
           <Logo />

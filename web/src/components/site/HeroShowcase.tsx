@@ -25,7 +25,7 @@ export function HeroShowcase() {
   const quote = useQuote(fund?.address, fund ? AMOUNT : null);
 
   return (
-    <div className="mx-auto w-full max-w-5xl rounded-[30px] bg-canvas p-3 text-left shadow-[var(--shadow-float)] ring-1 ring-hairline/60 sm:p-6">
+    <div className="glass mx-auto w-full max-w-5xl rounded-[30px] p-3 text-left sm:p-6">
       {!funds.data || !fund ? (
         <div className="flex h-72 items-center justify-center text-muted">
           <Spinner />

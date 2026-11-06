@@ -91,7 +91,7 @@
 
 /* App: same theme, denser type. */
 .theme-app {
-  background: var(--color-canvas);
+  background: transparent;
   color: var(--color-ink);
   min-height: 100dvh;
 }
@@ -109,6 +109,28 @@ body {
   font-size: 15px;
   line-height: 1.5;
   min-height: 100dvh;
+}
+
+/* Ambient light behind every page, so the frosted surfaces have something to
+   frost. Fixed, soft and low in saturation; deeper in dark mode. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(42rem 32rem at 8% -6%, rgba(0, 122, 255, 0.16), transparent 70%),
+    radial-gradient(38rem 30rem at 96% 8%, rgba(175, 82, 222, 0.13), transparent 70%),
+    radial-gradient(46rem 34rem at 70% 104%, rgba(14, 154, 167, 0.12), transparent 70%),
+    radial-gradient(30rem 24rem at 4% 92%, rgba(255, 149, 0, 0.07), transparent 70%);
+}
+.dark body::before {
+  background:
+    radial-gradient(42rem 32rem at 8% -6%, rgba(10, 132, 255, 0.22), transparent 70%),
+    radial-gradient(38rem 30rem at 96% 8%, rgba(191, 90, 242, 0.16), transparent 70%),
+    radial-gradient(46rem 34rem at 70% 104%, rgba(23, 163, 171, 0.14), transparent 70%),
+    radial-gradient(30rem 24rem at 4% 92%, rgba(255, 159, 10, 0.06), transparent 70%);
 }
 
 ::selection {
@@ -214,6 +236,16 @@ body {
 }
 
 @media (prefers-reduced-transparency: reduce) {
+  body::before {
+    display: none;
+  }
+  .card,
+  .frost,
+  .ios-group {
+    background: var(--color-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
   .glass {
     background: var(--color-surface);
     -webkit-backdrop-filter: none;
@@ -226,20 +258,48 @@ body {
   }
 }
 
-.card {
-  background: var(--color-surface);
+/* Frosted surfaces: mostly opaque so text stays crisp, blurred and saturated so
+   the ambient light shows through, with a lit top edge like iOS materials. */
+.card,
+.frost {
+  background: color-mix(in srgb, var(--color-surface) 74%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 0 0 0.5px rgba(0, 0, 0, 0.06),
+    0 6px 24px -10px rgba(0, 0, 0, 0.12);
+}
+.dark .card,
+.dark .frost {
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    0 8px 28px -10px rgba(0, 0, 0, 0.55);
 }
 
 @layer components {
 /* iOS inset grouped list: a white rounded group of rows with inset separators,
    a small header above and an optional footnote below. */
 .ios-group {
-  background: var(--color-surface);
+  background: color-mix(in srgb, var(--color-surface) 74%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 0 0 0.5px rgba(0, 0, 0, 0.06),
+    0 6px 24px -10px rgba(0, 0, 0, 0.12);
   overflow: hidden;
+}
+.dark .ios-group {
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    0 8px 28px -10px rgba(0, 0, 0, 0.55);
 }
 .ios-header {
   padding: 0 16px 7px;

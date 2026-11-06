@@ -24,7 +24,7 @@ const proofs: { claim: string; how: string; href: string; cta: string }[] = [
 export default function Landing() {
   return (
     <>
-      <section className="-mt-[70px] overflow-hidden bg-surface pt-[70px]">
+      <section className="-mt-[70px] overflow-hidden pt-[70px]">
         <Container className="pb-16 pt-10 text-center sm:pb-24 sm:pt-14">
           <Reveal y={12}>
             <a href="#verify" className="pressable mx-auto mb-8 inline-flex items-center gap-1 rounded-full bg-sunk/80 py-1.5 pl-3.5 pr-2.5 text-[13px] font-medium text-ink-2 hover:text-ink">
@@ -266,7 +266,7 @@ export default function Landing() {
         </Reveal>
       </Section>
 
-      <section className="bg-canvas">
+      <section>
         <Container className="py-24 text-center sm:py-32">
           <Reveal>
             <h2 className="t-page mx-auto max-w-2xl">Stop waiting for the window.</h2>

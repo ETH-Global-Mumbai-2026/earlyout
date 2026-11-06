@@ -11,7 +11,7 @@ export function Container({ children, className }: { children: ReactNode; classN
 /// Sections alternate white and Apple's light grey; headings reveal on scroll.
 export function Section({ id, eyebrow, title, lede, children, className, tint, center }: { id?: string; eyebrow?: string; title?: ReactNode; lede?: ReactNode; children?: ReactNode; className?: string; tint?: boolean; center?: boolean }) {
   return (
-    <section id={id} className={cn("bg-canvas py-14 sm:py-20", tint && "border-y border-hairline/60 bg-surface-2", className)}>
+    <section id={id} className={cn("py-14 sm:py-20", tint && "border-y border-hairline/50 bg-surface/30", className)}>
       <Container>
         <Reveal className={cn(center && "mx-auto max-w-3xl text-center")}>
           {eyebrow && <div className="text-[15px] font-semibold text-accent">{eyebrow}</div>}
@@ -26,7 +26,7 @@ export function Section({ id, eyebrow, title, lede, children, className, tint, c
 
 export function PageHeader({ eyebrow, title, lede }: { eyebrow: string; title: ReactNode; lede?: ReactNode }) {
   return (
-    <div className="-mt-[70px] bg-surface pt-[70px]">
+    <div className="-mt-[70px] pt-[70px]">
       <Container className="pb-14 pt-16 text-center sm:pb-16 sm:pt-20">
         <Reveal y={10}>
           <div className="text-[15px] font-semibold text-accent">{eyebrow}</div>
@@ -98,7 +98,7 @@ export function CTA({ href, children, variant = "primary" }: { href: string; chi
 
 export function Code({ children }: { children: string }) {
   return (
-    <pre className="overflow-x-auto rounded-2xl border border-hairline bg-canvas p-5 font-mono text-[13px] leading-relaxed text-ink-2">
+    <pre className="frost overflow-x-auto rounded-2xl p-5 font-mono text-[13px] leading-relaxed text-ink-2">
       <code>{children}</code>
     </pre>
   );
