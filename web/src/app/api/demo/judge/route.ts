@@ -1,7 +1,9 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
+import { allow } from "@/server/limit";
 import { isAddress, parseUnits, type Address } from "viem";
 import { claimTokenAbi, fundTokenAbi, registryAbi } from "@/lib/abi";
-import { serverEnv } from "@/server/env";
+import { publicError, serverEnv } from "@/server/env";
 
 const DEMO_UNITS = parseUnits("0.05", 18); // about 55 USDC of ACRED at NAV
 const GAS_USDC = parseUnits("0.2", 18); // native balance on Arc is 18dp
@@ -22,10 +24,14 @@ function overRate() {
 /// Allowlists them on every fund token and on ClaimToken, mints demo units, sends gas.
 /// Open by design so judges need no key, with three limits: Arc testnet only,
 /// MAX_PER_HOUR fresh wallets per instance, and the ops wallet keeps OPS_RESERVE.
-/// Set DEMO_TOKEN to require a key instead.
+/// Set JUDGE_TOKEN to require a key; DEMO_TOKEN (the issuer switch) does not lock judges out.
 export async function POST(req: Request) {
-  if (serverEnv.demoToken && req.headers.get("x-demo-token") !== serverEnv.demoToken) {
-    return NextResponse.json({ error: "Demo key required" }, { status: 401 });
+  if (!allow(req, 5)) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  const judgeToken = process.env.JUDGE_TOKEN;
+  if (judgeToken) {
+    const a = Buffer.from(judgeToken);
+    const b = Buffer.from(req.headers.get("x-demo-token") ?? "");
+    if (a.length !== b.length || !timingSafeEqual(a, b)) return NextResponse.json({ error: "Demo key required" }, { status: 401 });
   }
   let body: { address?: unknown };
   try {
@@ -72,6 +78,6 @@ export async function POST(req: Request) {
     if (gas < GAS_USDC / 2n) await wait(await wallet.sendTransaction({ to: visitor, value: GAS_USDC }));
     return NextResponse.json({ ok: true, funds: funds.length, transactions: hashes });
   } catch (e) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 502 });
+    return NextResponse.json({ error: publicError(e) }, { status: 502 });
   }
 }

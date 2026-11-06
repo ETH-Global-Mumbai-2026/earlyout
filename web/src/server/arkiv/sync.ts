@@ -46,7 +46,16 @@ async function readCursor(owner: Address): Promise<{ key?: Hex; lastBlock: bigin
   return row ? { key: row.$key, lastBlock: row.lastBlock.value } : { lastBlock: deployBlock() };
 }
 
-export async function syncOnce(): Promise<SyncReport> {
+let inflight: Promise<SyncReport> | null = null;
+
+/// One sync at a time per instance: overlapping runs would read the same cursor and
+/// write the same claim twice.
+export function syncOnce(): Promise<SyncReport> {
+  if (!inflight) inflight = syncOnceInner().finally(() => (inflight = null));
+  return inflight;
+}
+
+async function syncOnceInner(): Promise<SyncReport> {
   const writer = arkivWriter();
   if (!writer) throw new Error("ARKIV_WRITER_PRIVATE_KEY is not set");
   const a = addrs();
@@ -139,6 +148,8 @@ export async function syncOnce(): Promise<SyncReport> {
 
   for (const log of navs) {
     const fund = log.args.fund!;
+    const seen = await arkivPublic.select({ $key: true }).from(Navs).where(eq("fund", addr(fund)), eq("updatedAt", u64(log.args.updatedAt!))).ownedBy(writer.account.address).limit(1).fetch();
+    if (seen.entities.length) continue;
     const r = await writer.client.createEntity(
       Navs,
       { fund: addr(fund), updatedAt: u64(log.args.updatedAt!), nav: log.args.nav!, status: log.args.status === 1 ? "failed" : "ok", txHash: log.transactionHash },

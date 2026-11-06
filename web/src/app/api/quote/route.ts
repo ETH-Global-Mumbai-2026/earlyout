@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAddress, isAddress } from "viem";
 import { readQuote } from "@/server/state";
 import { allow } from "@/server/limit";
+import { publicError } from "@/server/env";
 import { toWire } from "@/lib/wire";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +18,8 @@ export async function GET(req: Request) {
     const q = await readQuote(getAddress(fund), BigInt(amountRaw));
     return new NextResponse(toWire(q), { headers: { "content-type": "application/json", "cache-control": "public, s-maxage=10, stale-while-revalidate=30" } });
   } catch (e) {
-    const message = e instanceof Error ? (e as { shortMessage?: string }).shortMessage ?? e.message : "Quote failed";
-    return NextResponse.json({ error: message }, { status: 502, headers: { "cache-control": "no-store" } });
+    const message = publicError(e, "Quote failed");
+    const status = /Fund not listed|Amount out of range/.test(message) ? 400 : 502;
+    return NextResponse.json({ error: message }, { status, headers: { "cache-control": "no-store" } });
   }
 }

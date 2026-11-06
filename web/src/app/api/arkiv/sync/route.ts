@@ -1,20 +1,18 @@
 import { NextResponse } from "next/server";
-import { demoAuthorized, serverEnv } from "@/server/env";
+import { publicError, serverEnv } from "@/server/env";
+import { allow } from "@/server/limit";
 
-/// POST or GET /api/arkiv/sync: index new Arc events into Arkiv. Idempotent.
-/// Optional CRON_SECRET (Vercel cron sends it as a bearer token).
+/// POST or GET /api/arkiv/sync: index new Arc events into Arkiv. Public on purpose, so the
+/// Book shows a sale within seconds: it is idempotent, single flight and rate limited, and it
+/// only copies what is already on chain.
 async function run(req: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.get("authorization") !== `Bearer ${secret}` && !demoAuthorized(req)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!allow(req, 6)) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   if (serverEnv.mode === "mock") return NextResponse.json({ mode: "mock", synced: 0 });
   try {
     const { syncOnce } = await import("@/server/arkiv/sync");
-    const report = await syncOnce();
-    return NextResponse.json(report);
+    return NextResponse.json(await syncOnce());
   } catch (e) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 502 });
+    return NextResponse.json({ error: publicError(e, "Sync failed") }, { status: 502 });
   }
 }
 

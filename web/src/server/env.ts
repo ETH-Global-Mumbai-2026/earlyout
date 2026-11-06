@@ -23,6 +23,24 @@ export const serverEnv = {
   demoToken: process.env.DEMO_TOKEN,
 };
 
+/// Vercel cron sends "Authorization: Bearer <CRON_SECRET>". Compared in constant time;
+/// no secret configured means no bearer access.
+export function cronAuthorized(req: Request): boolean {
+  const expected = process.env.CRON_SECRET;
+  const header = req.headers.get("authorization") ?? "";
+  if (!expected || !header.startsWith("Bearer ")) return false;
+  const a = Buffer.from(expected);
+  const b = Buffer.from(header.slice(7));
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+/// Error text safe to send to a browser: viem errors embed RPC URLs and request
+/// bodies, so only their short message goes out, trimmed.
+export function publicError(e: unknown, fallback = "Request failed"): string {
+  const msg = (e as { shortMessage?: string })?.shortMessage ?? (e instanceof Error ? e.message : fallback);
+  return String(msg).split("\n")[0].replace(/https?:\/\/\S+/g, "[rpc]").slice(0, 160);
+}
+
 /// Demo switches that sign on chain fail closed: no DEMO_TOKEN configured means no access.
 export function demoAuthorized(req: Request): boolean {
   const expected = serverEnv.demoToken;

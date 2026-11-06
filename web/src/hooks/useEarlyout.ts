@@ -103,7 +103,7 @@ export function usePushNav() {
   const done = useInvalidateAll();
   return useMutation({
     mutationFn: async () => {
-      const res = await fetch("/api/nav/push", { method: "POST" });
+      const res = await fetch("/api/nav/push", { method: "POST", headers: { "x-demo-token": demoKey() } });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error ?? "Could not push NAV");
       return body as { results: { fund: string; nav: string; hash: string }[] };

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { issuerAbi } from "@/lib/abi";
-import { demoAuthorized, serverEnv } from "@/server/env";
+import { demoAuthorized, publicError, serverEnv } from "@/server/env";
+import { allow } from "@/server/limit";
 import { mockIssuerFailed, setMockIssuerFailed } from "@/lib/source/mock";
 
 
@@ -8,18 +9,20 @@ import { mockIssuerFailed, setMockIssuerFailed } from "@/lib/source/mock";
 /// This is the "outside API" the Chainlink CRE workflow reads. In chain mode it
 /// reflects IssuerStub.failed() on Arc, so the stand-in issuer has one source of truth.
 export async function GET(req: Request) {
+  if (!allow(req, 60)) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   const fund = new URL(req.url).searchParams.get("fund") ?? undefined;
   try {
     const failed = await readFailed();
     return NextResponse.json({ status: failed ? "FAILED" : "OK", fund, source: serverEnv.mode === "mock" ? "mock" : "IssuerStub on Arc testnet", at: new Date().toISOString() });
   } catch (e) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 502 });
+    return NextResponse.json({ error: publicError(e) }, { status: 502 });
   }
 }
 
 /// POST {"failed": true|false}: demo switch. Requires the DEMO_TOKEN in an x-demo-token header
 /// (fails closed when DEMO_TOKEN is unset), so nobody can leave the live demo halted.
 export async function POST(req: Request) {
+  if (!allow(req, 10)) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   if (serverEnv.mode !== "mock" && !demoAuthorized(req)) {
     return NextResponse.json({ error: "Demo key required" }, { status: 401 });
   }
@@ -44,7 +47,7 @@ export async function POST(req: Request) {
     if (receipt.status !== "success") throw new Error("setFailed reverted");
     return NextResponse.json({ status: body.failed ? "FAILED" : "OK", hash });
   } catch (e) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 502 });
+    return NextResponse.json({ error: publicError(e) }, { status: 502 });
   }
 }
 
