@@ -41,28 +41,34 @@ test.describe("Vault", () => {
   test("deposits and withdraws", async ({ page }) => {
     await page.goto("/vault");
     await expect(page.getByText("Share price")).toBeVisible();
+    const worth = page.getByText("Your shares are worth").locator("..");
+    await expect(worth).toContainText("$0.00");
     await page.getByLabel(/Deposit in USDC/).fill("25");
     await page.getByRole("button", { name: "Deposit USDC" }).click();
-    await expect(page.getByRole("button", { name: "Deposit USDC" })).toBeEnabled();
+    await expect(page.getByLabel(/Deposit in USDC/)).toHaveValue("");
+    await expect(worth).toContainText("$25.00");
     await page.getByRole("radio", { name: "Withdraw" }).click();
     await page.getByLabel(/Withdraw in USDC/).fill("5");
     await page.getByRole("button", { name: "Withdraw USDC" }).click();
-    await expect(page.getByRole("button", { name: "Withdraw USDC" })).toBeEnabled();
+    await expect(worth).toContainText("$20.00");
   });
 });
 
 test.describe("Status", () => {
   test("issuer failure halts quotes and allows the writedown", async ({ page }) => {
+    // Demo state lives in the tab, so move between screens with the app's own tabs.
+    const tab = (name: string) =>
+      page.getByRole("navigation", { name: "App sections" }).filter({ visible: true }).getByRole("link", { name, exact: true });
     await page.goto("/status");
     await page.getByRole("button", { name: "Simulate issuer failure" }).click();
     await expect(page.getByText("Issuer status: FAILED")).toBeVisible();
 
-    await page.goto("/sell");
+    await tab("Sell").click();
     await page.getByLabel(/Amount in/).fill("0.01");
     await expect(page.getByText("HALT", { exact: true })).toBeVisible();
     await expect(page.getByText("Issuer reports failure")).toBeVisible();
 
-    await page.goto("/status");
+    await tab("Status").click();
     await expect(page.getByRole("button", { name: "Mark impaired" }).first()).toBeVisible();
     await page.getByRole("button", { name: "Restore issuer" }).click();
     await expect(page.getByText("Issuer status: OK")).toBeVisible();
@@ -103,5 +109,38 @@ test.describe("Site", () => {
     await expect(page.locator("html")).not.toHaveClass(/dark/);
     await page.getByRole("button", { name: "Switch to dark mode" }).first().click();
     await expect(page.locator("html")).toHaveClass(/dark/);
+  });
+});
+
+const ROUTES = ["/", "/how-it-works", "/distributors", "/developers", "/security", "/about", "/legal", "/sell", "/book", "/vault", "/status", "/missing-page"];
+
+test.describe("Responsive", () => {
+  for (const path of ROUTES) {
+    test(`no horizontal overflow on ${path}`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(overflow, "page is wider than the screen").toBeLessThanOrEqual(0);
+    });
+  }
+
+  test("site navigation works at this size", async ({ page }, info) => {
+    await page.goto("/");
+    if (info.project.name === "phone") {
+      await page.getByRole("button", { name: "Open menu" }).click();
+      await page.getByRole("navigation", { name: "Site" }).getByRole("link", { name: "Security" }).click();
+    } else {
+      await page.getByRole("navigation", { name: "Site" }).getByRole("link", { name: "Security" }).click();
+    }
+    await expect(page).toHaveURL(/\/security$/);
+    await expect(page.getByRole("heading", { level: 1, name: "Reviewed, tested, and plain about what is left." })).toBeVisible();
+  });
+
+  test("app tabs reach every screen at this size", async ({ page }) => {
+    await page.goto("/sell");
+    for (const [tab, heading] of [["Book", "Book"], ["Vault", "Vault"], ["Status", "Status"], ["Sell", "Sell your pending redemption"]]) {
+      await page.getByRole("navigation", { name: "App sections" }).filter({ visible: true }).getByRole("link", { name: tab, exact: true }).click();
+      await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
+    }
   });
 });

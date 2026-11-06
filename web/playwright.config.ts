@@ -6,13 +6,15 @@ const baseURL = process.env.E2E_BASE_URL ?? "http://127.0.0.1:3100";
 
 export default defineConfig({
   testDir: "e2e",
-  timeout: 30_000,
+  timeout: 45_000,
+  workers: 2,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? "github" : "list",
   use: { baseURL, trace: "retain-on-failure" },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Safari"] } },
-    { name: "mobile", use: { ...devices["iPhone 14"] } },
+    { name: "phone", use: { ...devices["iPhone 14"] } },
+    { name: "tablet", use: { ...devices["iPad (gen 7)"] } },
+    { name: "desktop", use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 } } },
   ],
   webServer: process.env.E2E_BASE_URL
     ? undefined
