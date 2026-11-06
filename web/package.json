@@ -11,7 +11,7 @@
     "check": "pnpm lint && pnpm typecheck",
     "sync-addresses": "node --experimental-strip-types scripts/sync-addresses.ts",
     "arkiv:query": "node --env-file-if-exists=.env.local --experimental-strip-types scripts/arkiv-query.ts",
-    "nav:push": "node --env-file-if-exists=.env.local --experimental-strip-types scripts/nav-push.ts",
+    "impair": "node --env-file-if-exists=.env.local --experimental-strip-types scripts/impair.ts",
     "test:e2e": "playwright test",
     "check:abi": "node --experimental-strip-types scripts/check-abi.ts"
   },
