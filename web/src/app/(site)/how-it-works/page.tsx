@@ -22,7 +22,7 @@ export default function HowItWorks() {
         title="From pending redemption to USDC in one transaction."
         lede="Earlyout turns a redemption request into a claim token, prices it against the fund's real net asset value (NAV), and lets a USDC (USD Coin) vault on Arc buy it."
       />
-      <Section eyebrow="The flow" title="Five steps, three of them automatic.">
+      <Section eyebrow="The flow" title="Six steps. You sign once, the contracts do the rest.">
         <div className="card mb-6 p-4 sm:p-8">
           <SaleFlowDiagram />
         </div>
@@ -69,7 +69,7 @@ export default function HowItWorks() {
         <div className="card mb-6 p-4 sm:p-8">
           <VerdictDiagram />
         </div>
-        <div className="card max-w-3xl p-6">
+        <div className="card p-6">
           <DataRows
             rows={[
               ["Exposure cap", "REFUSE", "per fund, in USDC"],
