@@ -2,12 +2,16 @@
 
 ## Writing
 
-One wallet writes, `0x343F684dAFFf216CDf38a40888662148eBa07Fd7` on the Rabdi testnet. The indexer in `web/src/server/arkiv/sync.ts` runs as a route handler (`/api/arkiv/sync`), called right after a sale completes in the app and on a schedule. Each run:
+One wallet writes, `0x343F684dAFFf216CDf38a40888662148eBa07Fd7` on the Rabdi testnet, from `web/src/server/arkiv/sync.ts` through the route `/api/arkiv/sync`. It writes in two ways.
+
+**Each sale, seconds after it happens.** When a sale completes, the app posts its Arc transaction hash. The server reads that receipt from Arc, decodes the `ClaimSold` event emitted by our Vault, looks up the claim's fund and payout date, and calls `createEntity(Claims, ..., { expiration: ExpirationTime.atDate(settleAt) })`. One entity per sale: several sales can share a claim id (same fund, same payout window), so before writing it checks whether an entity for that exact transaction already exists, which makes the call safe to repeat.
+
+**A block scan for everything else**, after each sale and once a day. Each run:
 
 1. Reads its cursor entity to find the last Arc block it handled.
-2. Fetches `ClaimSold`, `ClaimBought`, `ClaimSettled` and `NavUpdated` logs from the Earlyout contracts on Arc since then.
-3. For each `ClaimSold`, looks up the claim's fund and payout date on Arc, then `createEntity(Claims, ..., { expiration: ExpirationTime.atDate(settleAt) })`.
-4. For each `ClaimBought` or `ClaimSettled`, `patchEntity` on the matching claim to update `status` and `holder`.
+2. Fetches `ClaimSold`, `ClaimBought`, `ClaimSettled` and `NavUpdated` logs from the Earlyout contracts since then.
+3. Records any sale the first path missed, with the same one-per-transaction check.
+4. For each `ClaimBought` or `ClaimSettled`, patches every entity for that claim to update `status` and `holder`.
 5. For each `NavUpdated`, creates a `Navs` entity and patches the fund's `Funds` entity, then `extendEntity` so it expires one day after this refresh.
 6. Patches the cursor.
 
@@ -34,10 +38,11 @@ Arkiv itself does not stop another wallet from creating entities tagged with our
 | Owner wallet | `ownedBy(writer)` in every query | The Book shows only entries written by Earlyout's wallet, and says which wallet at the bottom of the screen |
 | Patch | `ClaimBought` and `ClaimSettled` patch `status` and `holder` | A bought claim shows its new holder; a settled one drops out |
 | Entity key | Each row links to `rabdi.explorer.arkiv.network/entity/<key>` | Anyone can open the raw entity next to the Arc transaction |
+| One entity per sale | `createEntity` per `ClaimSold`, checked against `txHash` | Two sales into the same claim window show as two rows, each with its own seller, price and proof |
 
 ## Reading
 
-The Book screen (`/book`) reads only from Arkiv, through `/api/book`, which runs the query in `web/src/server/arkiv/read.ts`. Neither screen falls back to our own database; there is none.
+The Book screen (`/book`) and the Vault screen's positions table read only from Arkiv, through `/api/book`, which runs the query in `web/src/server/arkiv/read.ts` and shares one read across visitors for five seconds. Neither screen falls back to our own database; there is none.
 
 ## Running the query yourself
 
