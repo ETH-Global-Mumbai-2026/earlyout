@@ -10,10 +10,15 @@ Built at ETHGlobal Mumbai 2026, from scratch.
 
 | | |
 |---|---|
-| Live app | https://earlyout.vercel.app |
+| Live app | https://earlyout.vercel.app (Arc testnet, chain 5042002) |
 | Arc Studio project | https://studio.arc.io/app/b9396e35-441e-4180-9444-965d2ad5dc59 |
 | Repository | https://github.com/ETH-Global-Mumbai-2026/earlyout |
 | ETHGlobal showcase and demo video | https://ethglobal.com/showcase/earlyout-sa4m0 |
+| Vault contract | [`0x7A40b36b012DC19b1f42dd68C13F4daE312e2319`](https://explorer.testnet.arc.io/address/0x7A40b36b012DC19b1f42dd68C13F4daE312e2319) |
+| Example transaction | A sale paid in USDC in one transaction: [`0x12aefa…`](https://explorer.testnet.arc.io/tx/0x12aefa9df1553daadc4c026566387f0fdde7cf9af6a0153a5eac5e141973a5ee) |
+| Builder | Satyam Sharma: GitHub [@SatyamDev803](https://github.com/SatyamDev803), X [@Satyam_S1603](https://x.com/Satyam_S1603) |
+
+Arc reviewers: every item Arc asks for is mapped in [Arc submission checklist](#arc-submission-checklist).
 
 **Partner prizes we apply for**
 
@@ -153,6 +158,32 @@ Circle tools used: USDC on Arc, Circle Wallets (the developer-controlled deploye
 - A sale settled in USDC in one transaction: [`0x12aefa…`](https://explorer.testnet.arc.io/tx/0x12aefa9df1553daadc4c026566387f0fdde7cf9af6a0153a5eac5e141973a5ee)
 - Settlement raising the LP share price to 1.011360: [`0x93ef49…`](https://explorer.testnet.arc.io/tx/0x93ef49119e451814a6a8fbc88035459404d375377b23af1583bf3fe990dcf008)
 - A sale from a judge-style MetaMask wallet on 7 November: [`0x758bba…`](https://explorer.testnet.arc.io/tx/0x758bba8f26f7e66bba5478c40d8ecf8920e258bb5db4a18448ec6f37504e026a)
+
+### Why Arc: what it enables that other chains would not
+
+- **One currency end to end.** USDC is Arc's gas token, so the seller, the liquidity providers and the issuer only ever hold and spend USDC. A seller who has never held a native gas token can exit a fund position and pay the transaction fee from the same balance. On other chains every leg would need ETH or another token for gas, and the price shown would not be the cost paid.
+- **Settlement users can rely on.** Arc has deterministic finality: once the sale transaction is in a block, the USDC payout is final. "USDC reaches you in the same transaction" is a promise we can make on screen, not "after enough confirmations".
+- **Money that behaves like money.** Native USDC with Circle's issuance and redemption means the vault's asset is the same dollar an institution already uses, not a bridged copy. For a product sold to fund distributors, that removes a whole class of risk from the conversation.
+- **Circle's stack around it.** Arc Studio took our contracts from review to deployment, and the deployer was a Circle developer-controlled wallet that handed ownership to us. Circle Gateway and CCTP are the path for sellers whose USDC lives on another chain.
+- **An institutional venue for a regulated asset.** Tokenized private credit only moves between approved wallets. A chain built for stablecoin finance, with a known validator set, is where distributors and issuers can plausibly run this.
+
+### Arc submission checklist
+
+Every item in Arc's judging email, and where to find it.
+
+| Arc asks for | Where it is |
+|---|---|
+| Arc Studio as the starting point | Earlyout was pitched and planned in our Studio project on 6 November at 18:55 IST (Thread 1). The contracts then went into the same project (Thread 2, from 20:46), where Studio tested and reviewed them, fixed five Medium findings, added 13 tests, deployed all 34 transactions from a Circle developer-controlled wallet and built an app against them. See [What Arc Studio did](#what-arc-studio-did) |
+| Arc Studio project URL | https://studio.arc.io/app/b9396e35-441e-4180-9444-965d2ad5dc59. Studio has no public share option, so the project opens for signed-in Studio users with access; every Thread 2 prompt and output is mirrored in [`docs/studio/`](docs/studio) |
+| Live deployment | https://earlyout.vercel.app, on **Arc testnet** (chain 5042002). We have not deployed to Arc mainnet: the fund token and the issuer are stand-ins, the open High finding below is unfixed, and Arc's own guidance is to finish independent review before putting real funds on mainnet. The contracts and the deploy script are chain-agnostic, so a mainnet deployment is the same script with a different RPC |
+| Public repository | https://github.com/ETH-Global-Mumbai-2026/earlyout (MIT) |
+| What it does | The opening of this README and [How it works](#how-it-works) |
+| How we used Arc Studio | [What Arc Studio did](#what-arc-studio-did) and [`docs/studio/`](docs/studio) |
+| What Arc enables | [Why Arc](#why-arc-what-it-enables-that-other-chains-would-not), above |
+| Video walkthrough | https://ethglobal.com/showcase/earlyout-sa4m0: a live sale on Arc, the verdicts, the vault, and Arc Studio |
+| Public builder profile | Satyam Sharma: GitHub [@SatyamDev803](https://github.com/SatyamDev803), X [@Satyam_S1603](https://x.com/Satyam_S1603) |
+| Contract addresses | [Contracts](#contracts-arc-testnet-chain-5042002), and `contracts/deployments/*.json` |
+| Example transaction | A sale paid in USDC in one transaction: [`0x12aefa…`](https://explorer.testnet.arc.io/tx/0x12aefa9df1553daadc4c026566387f0fdde7cf9af6a0153a5eac5e141973a5ee). More in [Proof](#proof) |
 
 ### Requirements
 
