@@ -25,6 +25,14 @@ function Line({ label, children, strong }: { label: React.ReactNode; children: R
   );
 }
 
+/// What the seller can do instead, in plain words, when the vault will not buy.
+function blockedHint(q: Quote, symbol: string): string {
+  if (q.reason === "Over the fund cap") return `The vault can take ${fmtUsdc(q.capacityLeft)} more of ${symbol} right now. Try a smaller amount.`;
+  if (q.reason === "Vault short of USDC") return "The vault does not hold enough idle USDC for this sale. Try a smaller amount.";
+  if (q.verdict === "HALT") return "Trading in this fund is paused, so nothing will move. It resumes once the oracle or the owner clears it.";
+  return `Nothing will move: ${q.reason.toLowerCase()}.`;
+}
+
 /// The price, as iOS rows meant to sit inside a grouped section: verdict first,
 /// then gross, the four spread terms, what you receive, and the settlement facts.
 export function QuoteCard({ quote, pending, symbol }: { quote?: Quote; pending: boolean; symbol: string }) {
@@ -69,19 +77,27 @@ export function QuoteCard({ quote, pending, symbol }: { quote?: Quote; pending: 
         </div>
       </div>
       <Line label="Total spread">{fmtBps(spread)}</Line>
-      <div className="ios-row min-h-[72px]">
-        <Ring value={Number(quote.payout)} max={Number(quote.value)} size={46} stroke={6} color="var(--color-dot-buy)" label={`You keep ${quote.value > 0n ? ((Number(quote.payout) / Number(quote.value)) * 100).toFixed(1) : "0"}% of NAV`}>
-          <span className="num text-[11px] font-semibold">{quote.value > 0n ? Math.round((Number(quote.payout) / Number(quote.value)) * 100) : 0}%</span>
-        </Ring>
-        <span className="flex-1 text-[17px] font-semibold">
-          You receive now
-          <span className="block text-[13px] font-normal text-muted">of the value at NAV</span>
-        </span>
-        <Swap k={quote.payout.toString()} className="num text-[28px] font-bold tracking-[-0.02em]">
-          {fmtUsdc(quote.payout, true)}
-        </Swap>
-      </div>
-      <Line label="Minimum received">{fmtUsdc(minOut, true)}</Line>
+      {quote.verdict === "BUY" ? (
+        <>
+          <div className="ios-row min-h-[72px]">
+            <Ring value={Number(quote.payout)} max={Number(quote.value)} size={46} stroke={6} color="var(--color-dot-buy)" label={`You keep ${quote.value > 0n ? ((Number(quote.payout) / Number(quote.value)) * 100).toFixed(1) : "0"}% of NAV`}>
+              <span className="num text-[11px] font-semibold">{quote.value > 0n ? Math.round((Number(quote.payout) / Number(quote.value)) * 100) : 0}%</span>
+            </Ring>
+            <span className="flex-1 text-[17px] font-semibold">
+              You receive now
+              <span className="block text-[13px] font-normal text-muted">of the value at NAV</span>
+            </span>
+            <Swap k={quote.payout.toString()} className="num text-[28px] font-bold tracking-[-0.02em]">
+              {fmtUsdc(quote.payout, true)}
+            </Swap>
+          </div>
+          <Line label="Minimum received">{fmtUsdc(minOut, true)}</Line>
+        </>
+      ) : (
+        <div className="ios-row">
+          <span className="flex-1 text-[15px] leading-snug text-ink-2">{blockedHint(quote, symbol)}</span>
+        </div>
+      )}
       <Line label="Claim pays the vault">
         <span title={fmtDate(quote.settleAt)} className="whitespace-nowrap">
           in {timeUntil(quote.settleAt, now)}

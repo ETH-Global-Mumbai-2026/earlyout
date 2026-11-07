@@ -41,9 +41,13 @@ export default function SellPage() {
 
   async function onSell() {
     if (!fund || !q || amount === null) return;
-    const r = await sell.mutateAsync({ fund: fund.address, amount, minPayout: (q.payout * 995n) / 1000n });
-    setReceipt(r);
-    setAmountText("");
+    try {
+      const r = await sell.mutateAsync({ fund: fund.address, amount, minPayout: (q.payout * 995n) / 1000n });
+      setReceipt(r);
+      setAmountText("");
+    } catch {
+      // Shown under the quote through sell.isError.
+    }
   }
 
   return (
@@ -61,24 +65,13 @@ export default function SellPage() {
 
       {funds.data && fund && (
         <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_400px]">
-          <div className="grid min-w-0 gap-8">
+          <div className="min-w-0 lg:col-start-1 lg:row-start-1">
             <Panel title="Funds" note="Live from Arc" plain>
-              <FundsTable funds={funds.data} value={fund.address} onChange={setFund} now={now} market={market} />
-            </Panel>
-            <Panel title="Spread by time to payout" note={`${fund.symbol} terms`} bodyClassName="p-4" footer="Waiting is the main cost, and it is priced, not hidden.">
-              <SpreadCurve
-                height={190}
-                baseBps={50}
-                utilBps={q?.utilBps ?? 0}
-                creditBps={fund.creditBps}
-                volBps={fund.volBps}
-                maxDays={180}
-                marks={curveMarks(funds.data, fund)}
-              />
+              <FundsTable show="buyable" funds={funds.data} value={fund.address} onChange={setFund} now={now} market={market} />
             </Panel>
           </div>
 
-          <div className="grid gap-6 lg:sticky lg:top-[112px]">
+          <div className="grid gap-6 lg:sticky lg:top-[112px] lg:col-start-2 lg:row-span-2 lg:row-start-1">
             <Panel title="Your sale">
               <div className="ios-row">
                 <span className="flex-1 text-[17px]">Fund</span>
@@ -105,6 +98,22 @@ export default function SellPage() {
             <Button size="lg" className="w-full" onClick={onSell} disabled={!canSell} loading={sell.isPending}>
               {!wallet.isConnected ? "Connect a wallet to sell" : q?.verdict === "BUY" ? `Sell for ${fmtUsdc(q.payout)}` : "Sell"}
             </Button>
+          </div>
+
+          {/* On phones this follows the sale form; on desktop it sits under the funds. */}
+          <div className="grid min-w-0 gap-8 lg:col-start-1 lg:row-start-2">
+            <FundsTable show="daily" funds={funds.data} value={fund.address} onChange={setFund} now={now} market={market} />
+            <Panel title="Spread by time to payout" note={`${fund.symbol} terms`} bodyClassName="p-4" footer="Waiting is the main cost, and it is priced, not hidden.">
+              <SpreadCurve
+                height={190}
+                baseBps={50}
+                utilBps={q?.utilBps ?? 0}
+                creditBps={fund.creditBps}
+                volBps={fund.volBps}
+                maxDays={180}
+                marks={curveMarks(funds.data, fund)}
+              />
+            </Panel>
           </div>
         </div>
       )}

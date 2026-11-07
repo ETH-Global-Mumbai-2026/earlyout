@@ -31,11 +31,28 @@ function FundIcon({ f, muted }: { f: Fund; muted?: boolean }) {
 /// The funds as an iOS inset grouped list. Funds that redeem on a schedule are
 /// choices (radio rows); funds that already pay within days follow as a dimmed
 /// comparison group that cannot be picked.
-export function FundsTable({ funds, value, onChange, now, market }: { funds: Fund[]; value?: string; onChange: (f: Fund) => void; now: number; market: Market }) {
-  const buyable = funds.filter((f) => isScheduled(f.symbol));
-  const daily = funds.filter((f) => !isScheduled(f.symbol));
+export function FundsTable({
+  funds,
+  value,
+  onChange,
+  now,
+  market,
+  show = "all",
+}: {
+  funds: Fund[];
+  value?: string;
+  onChange: (f: Fund) => void;
+  now: number;
+  market: Market;
+  /// "buyable" or "daily" renders one group, so a phone layout can put the sale form between them.
+  show?: "all" | "buyable" | "daily";
+}) {
+  const buyable = show === "daily" ? [] : funds.filter((f) => isScheduled(f.symbol));
+  const daily = show === "buyable" ? [] : funds.filter((f) => !isScheduled(f.symbol));
   return (
     <div>
+      {buyable.length > 0 && (
+      <>
       <div role="radiogroup" aria-label="Fund" className="ios-group [--inset:58px]">
         {buyable.map((f) => {
           const active = f.address === value;
@@ -77,10 +94,12 @@ export function FundsTable({ funds, value, onChange, now, market }: { funds: Fun
       <p className="ios-footer">
         Bid per unit from the vault, priced from each fund&apos;s Chainlink net asset value (<Abbr k="NAV" />).
       </p>
+      </>
+      )}
 
       {daily.length > 0 && (
         <>
-          <div className="ios-header mt-6">Daily-liquidity funds, for comparison</div>
+          <div className={cn("ios-header", buyable.length > 0 && "mt-6")}>Daily-liquidity funds, for comparison</div>
           <ul className="ios-group [--inset:58px]">
             {daily.map((f) => (
               <li key={f.address} className="ios-row">
