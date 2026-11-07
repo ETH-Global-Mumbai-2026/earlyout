@@ -1,10 +1,10 @@
 import "server-only";
-import type { Address } from "viem";
+import type { Address, Hex } from "viem";
 import { createPublicClient, erc20Abi as viemErc20, http } from "viem";
 import { arcTestnet, USDC_ADDRESS } from "@/lib/chain";
 import { addresses } from "@/lib/addresses";
-import { erc20Abi, oracleAbi, registryAbi, vaultAbi } from "@/lib/abi";
-import type { Fund, Quote, VaultState, Verdict } from "@/lib/types";
+import { erc20Abi, issuerAbi, oracleAbi, registryAbi, vaultAbi } from "@/lib/abi";
+import type { Account, Fund, Quote, VaultState, Verdict } from "@/lib/types";
 import { roundUpToWindow } from "@/lib/types";
 import { serverEnv } from "./env";
 
@@ -136,4 +136,78 @@ export function invalidateState(): boolean {
   lastInvalidated = Date.now();
   cached = null;
   return true;
+}
+
+/// A wallet's balances, read here so the browser never polls Arc's public RPC
+/// (it rate-limits per visitor IP). One multicall per wallet, cached a few seconds.
+const accountCache = new Map<string, { at: number; value: Promise<Account> }>();
+const ACCOUNT_TTL_MS = 4_000;
+
+export function readAccount(address: Address, fresh = false): Promise<Account> {
+  const key = address.toLowerCase();
+  const hit = accountCache.get(key);
+  if (!fresh && hit && Date.now() - hit.at < ACCOUNT_TTL_MS) return hit.value;
+  const value = accountUncached(address);
+  if (accountCache.size > 1000) accountCache.clear();
+  accountCache.set(key, { at: Date.now(), value });
+  value.catch(() => accountCache.delete(key));
+  return value;
+}
+
+async function accountUncached(address: Address): Promise<Account> {
+  const { funds } = await readState();
+  const v = addresses.vault;
+  const [usdc, shares, maxWithdraw, maxDeposit, ...balances] = await Promise.all([
+    client.readContract({ address: USDC_ADDRESS, abi: viemErc20, functionName: "balanceOf", args: [address] }),
+    client.readContract({ address: v, abi: vaultAbi, functionName: "balanceOf", args: [address] }),
+    client.readContract({ address: v, abi: vaultAbi, functionName: "maxWithdraw", args: [address] }),
+    client.readContract({ address: v, abi: vaultAbi, functionName: "maxDeposit", args: [address] }),
+    ...funds.map((f) => client.readContract({ address: f.address, abi: viemErc20, functionName: "balanceOf", args: [address] })),
+  ]);
+  const sharesValue = shares === 0n ? 0n : await client.readContract({ address: v, abi: vaultAbi, functionName: "convertToAssets", args: [shares] });
+  return { address, usdc, fundBalances: Object.fromEntries(funds.map((f, i) => [f.address, balances[i]])), shares, sharesValue, maxWithdraw, maxDeposit };
+}
+
+/// Only tokens and spenders the app itself uses, so the route cannot be used as a general RPC.
+export async function readAllowance(token: Address, owner: Address, spender: Address): Promise<bigint> {
+  const { funds } = await readState();
+  const tokens = new Set([USDC_ADDRESS.toLowerCase(), ...funds.map((f) => f.address.toLowerCase())]);
+  const spenders = new Set([addresses.vault, addresses.wrapper].filter(Boolean).map((a) => a.toLowerCase()));
+  if (!tokens.has(token.toLowerCase()) || !spenders.has(spender.toLowerCase())) throw new Error("Unsupported token or spender");
+  return client.readContract({ address: token, abi: viemErc20, functionName: "allowance", args: [owner, spender] });
+}
+
+export type WireReceipt = { status: "pending" | "success" | "reverted"; logs: { address: Address; data: Hex; topics: Hex[] }[] };
+
+/// A transaction's receipt, for the browser to poll while it waits.
+export async function readReceipt(hash: Hex): Promise<WireReceipt> {
+  try {
+    const r = await client.getTransactionReceipt({ hash });
+    return { status: r.status, logs: r.logs.map((l) => ({ address: l.address, data: l.data, topics: l.topics as Hex[] })) };
+  } catch (e) {
+    if (e instanceof Error && /could not be found|not found/i.test(e.message)) return { status: "pending", logs: [] };
+    throw e;
+  }
+}
+
+let issuerCache: { at: number; value: Promise<boolean> } | null = null;
+let issuerLastGood: { at: number; value: boolean } | null = null;
+/// IssuerStub.failed(), cached five seconds; dropped when the demo switch flips it.
+/// If Arc's RPC is rate-limiting us, the last reading from the past five minutes stands in.
+export function readIssuerFailed(fresh = false): Promise<boolean> {
+  if (!fresh && issuerCache && Date.now() - issuerCache.at < 5_000) return issuerCache.value;
+  if (!serverEnv.issuer) return Promise.reject(new Error("NEXT_PUBLIC_ISSUER_STUB is not set"));
+  const value = client
+    .readContract({ address: serverEnv.issuer, abi: issuerAbi, functionName: "failed" })
+    .then((v) => {
+      issuerLastGood = { at: Date.now(), value: v };
+      return v;
+    })
+    .catch((e: unknown) => {
+      if (issuerCache?.value === value) issuerCache = null;
+      if (!fresh && issuerLastGood && Date.now() - issuerLastGood.at < STALE_OK_MS) return issuerLastGood.value;
+      throw e;
+    });
+  issuerCache = { at: Date.now(), value };
+  return value;
 }

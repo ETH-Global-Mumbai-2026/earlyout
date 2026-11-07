@@ -45,6 +45,8 @@ export async function POST(req: Request) {
     const hash = await wallet.writeContract({ address: serverEnv.issuer, abi: issuerAbi, functionName: "setFailed", args: [body.failed] });
     const receipt = await arcPublic.waitForTransactionReceipt({ hash });
     if (receipt.status !== "success") throw new Error("setFailed reverted");
+    const { readIssuerFailed } = await import("@/server/state");
+    void readIssuerFailed(true).catch(() => undefined);
     return NextResponse.json({ status: body.failed ? "FAILED" : "OK", hash });
   } catch (e) {
     return NextResponse.json({ error: publicError(e) }, { status: 502 });
@@ -53,7 +55,6 @@ export async function POST(req: Request) {
 
 async function readFailed(): Promise<boolean> {
   if (serverEnv.mode === "mock") return mockIssuerFailed();
-  if (!serverEnv.issuer) throw new Error("NEXT_PUBLIC_ISSUER_STUB is not set");
-  const { arcPublic } = await import("@/server/arc");
-  return arcPublic.readContract({ address: serverEnv.issuer, abi: issuerAbi, functionName: "failed" });
+  const { readIssuerFailed } = await import("@/server/state");
+  return readIssuerFailed();
 }

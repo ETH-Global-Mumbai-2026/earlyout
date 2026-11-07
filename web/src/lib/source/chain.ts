@@ -1,9 +1,9 @@
 import type { Address, Hex } from "viem";
 import { decodeEventLog, erc20Abi as viemErc20, maxUint256 } from "viem";
-import { getAccount, readContract, switchChain, waitForTransactionReceipt, writeContract } from "wagmi/actions";
+import { getAccount, switchChain, writeContract } from "wagmi/actions";
 import { arcTestnet, USDC_ADDRESS, wagmiConfig } from "../chain";
 import { addresses } from "../addresses";
-import { issuerAbi, vaultAbi, wrapperAbi } from "../abi";
+import { vaultAbi, wrapperAbi } from "../abi";
 import type { Account, Fund, Quote, Receipt, Source, VaultState } from "../types";
 import { fromWire } from "../wire";
 
@@ -22,23 +22,42 @@ async function ensureChain() {
   if (a.chainId !== chainId) await switchChain(cfg, { chainId });
 }
 
-async function send(write: () => Promise<Hex>): Promise<Hex> {
+type WireReceipt = { status: "pending" | "success" | "reverted"; logs: { address: Address; data: Hex; topics: [Hex, ...Hex[]] }[] };
+
+/// Waits for a transaction through our API rather than Arc's public RPC, which
+/// rate-limits each visitor's browser and made confirmations hang for minutes.
+async function waitReceipt(hash: Hex): Promise<WireReceipt> {
+  const started = Date.now();
+  let delay = 800;
+  while (Date.now() - started < 180_000) {
+    await new Promise((r) => setTimeout(r, delay));
+    try {
+      const r = await getJson<WireReceipt>(`/api/receipt?hash=${hash}`);
+      if (r.status !== "pending") return r;
+    } catch {
+      // A failed poll is retried; the transaction is already sent.
+    }
+    delay = Math.min(delay + 400, 2_500);
+  }
+  throw new Error("Still waiting for Arc to confirm. Check the explorer, then refresh.");
+}
+
+async function send(write: () => Promise<Hex>): Promise<{ hash: Hex; receipt: WireReceipt }> {
   await ensureChain();
   const hash = await write();
-  const receipt = await waitForTransactionReceipt(cfg, { hash, chainId });
+  const receipt = await waitReceipt(hash);
   if (receipt.status !== "success") throw new Error("Transaction reverted");
   bustNext = true;
-  return hash;
+  return { hash, receipt };
 }
 
 async function ensureAllowance(token: Address, owner: Address, spender: Address, amount: bigint) {
-  const current = await readContract(cfg, { chainId,  address: token, abi: viemErc20, functionName: "allowance", args: [owner, spender] });
-  if (current < amount) {
-    await send(() => writeContract(cfg, { chainId,  address: token, abi: viemErc20, functionName: "approve", args: [spender, maxUint256] }));
+  const { allowance } = await getJson<{ allowance: bigint }>(`/api/account?address=${owner}&token=${token}&spender=${spender}`);
+  if (allowance < amount) {
+    await send(() => writeContract(cfg, { chainId, address: token, abi: viemErc20, functionName: "approve", args: [spender, maxUint256] }));
   }
 }
 
-let termsCache: Map<Address, { settlementDelay: number; window: number }> | null = null;
 
 // Reads come from our own API (one cached multicall shared by every visitor),
 // so the browser does not call Arc's public RPC for them. After a write the next
@@ -63,10 +82,7 @@ function loadState() {
   if (inflight && Date.now() - inflight.at < 2000 && !bustNext) return inflight.p;
   const url = bustNext ? `/api/state?fresh=${Date.now()}` : "/api/state";
   bustNext = false;
-  const p = getJson<{ funds: Fund[]; vault: VaultState }>(url).then((s) => {
-    termsCache = new Map(s.funds.map((f) => [f.address, { settlementDelay: f.settlementDelay, window: f.window }]));
-    return s;
-  });
+  const p = getJson<{ funds: Fund[]; vault: VaultState }>(url);
   inflight = { at: Date.now(), p };
   p.catch(() => {
     if (inflight?.p === p) inflight = null;
@@ -91,36 +107,20 @@ export const chainSource: Source = {
   },
 
   async account(address): Promise<Account> {
-    const funds = termsCache ? [...termsCache.keys()] : (await loadFunds()).map((f) => f.address);
-    const [usdc, shares, maxWithdraw, maxDeposit, ...balances] = await Promise.all([
-      readContract(cfg, { chainId,  address: USDC_ADDRESS, abi: viemErc20, functionName: "balanceOf", args: [address] }),
-      readContract(cfg, { chainId,  address: addresses.vault, abi: vaultAbi, functionName: "balanceOf", args: [address] }),
-      readContract(cfg, { chainId,  address: addresses.vault, abi: vaultAbi, functionName: "maxWithdraw", args: [address] }),
-      readContract(cfg, { chainId,  address: addresses.vault, abi: vaultAbi, functionName: "maxDeposit", args: [address] }),
-      ...funds.map((f) => readContract(cfg, { chainId,  address: f, abi: viemErc20, functionName: "balanceOf", args: [address] })),
-    ]);
-    const sharesValue = shares === 0n ? 0n : await readContract(cfg, { chainId,  address: addresses.vault, abi: vaultAbi, functionName: "convertToAssets", args: [shares] });
-    return {
-      address,
-      usdc,
-      fundBalances: Object.fromEntries(funds.map((f, i) => [f, balances[i]])),
-      shares,
-      sharesValue,
-      maxWithdraw,
-      maxDeposit,
-    };
+    const fresh = bustNext ? `&fresh=${Date.now()}` : "";
+    return getJson<Account>(`/api/account?address=${address}${fresh}`);
   },
 
   async issuerFailed() {
-    return readContract(cfg, { chainId,  address: addresses.issuer, abi: issuerAbi, functionName: "failed" });
+    const r = await getJson<{ status: string }>("/api/issuer-status");
+    return r.status === "FAILED";
   },
 
   async sell(fund, amount, minPayout): Promise<Receipt> {
     const me = requireAccount();
     await ensureChain();
     await ensureAllowance(fund, me, addresses.wrapper, amount);
-    const hash = await send(() => writeContract(cfg, { chainId,  address: addresses.wrapper, abi: wrapperAbi, functionName: "depositAndSell", args: [fund, amount, minPayout] }));
-    const receipt = await waitForTransactionReceipt(cfg, { hash, chainId });
+    const { hash, receipt } = await send(() => writeContract(cfg, { chainId,  address: addresses.wrapper, abi: wrapperAbi, functionName: "depositAndSell", args: [fund, amount, minPayout] }));
     let claimId: bigint | undefined;
     let payout: bigint | undefined;
     for (const log of receipt.logs) {
@@ -142,19 +142,19 @@ export const chainSource: Source = {
     const me = requireAccount();
     await ensureChain();
     await ensureAllowance(USDC_ADDRESS, me, addresses.vault, amount);
-    const hash = await send(() => writeContract(cfg, { chainId,  address: addresses.vault, abi: vaultAbi, functionName: "deposit", args: [amount, me] }));
+    const { hash } = await send(() => writeContract(cfg, { chainId,  address: addresses.vault, abi: vaultAbi, functionName: "deposit", args: [amount, me] }));
     return { hash };
   },
 
   async withdraw(amount): Promise<Receipt> {
     const me = requireAccount();
-    const hash = await send(() => writeContract(cfg, { chainId,  address: addresses.vault, abi: vaultAbi, functionName: "withdraw", args: [amount, me, me] }));
+    const { hash } = await send(() => writeContract(cfg, { chainId,  address: addresses.vault, abi: vaultAbi, functionName: "withdraw", args: [amount, me, me] }));
     return { hash };
   },
 
   async markImpaired(fund): Promise<Receipt> {
     requireAccount();
-    const hash = await send(() => writeContract(cfg, { chainId,  address: addresses.vault, abi: vaultAbi, functionName: "markImpaired", args: [fund] }));
+    const { hash } = await send(() => writeContract(cfg, { chainId,  address: addresses.vault, abi: vaultAbi, functionName: "markImpaired", args: [fund] }));
     return { hash };
   },
 };
