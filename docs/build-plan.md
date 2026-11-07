@@ -1,5 +1,7 @@
 # Earlyout build plan
 
+> Planning document as written on 6 November, before the build. Some details changed while building; the [README](../README.md) describes what shipped.
+
 Phased so the project is submittable after every phase, and every phase ends with a check that must pass before the next starts. Status as of Fri 6 Nov, evening IST.
 
 ## Deadline

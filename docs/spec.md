@@ -1,5 +1,7 @@
 # Earlyout build spec
 
+> Planning document as written on 6 November, before the build. Some details changed while building; the [README](../README.md) describes what shipped.
+
 ## One line
 
 Sell your pending fund redemption today, at a price that explains its own risks.
