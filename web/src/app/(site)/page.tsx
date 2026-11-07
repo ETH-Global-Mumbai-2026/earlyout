@@ -13,7 +13,7 @@ import { CATALOG, GLOSSARY, isScheduled } from "@/lib/glossary";
 
 const X = "https://explorer.testnet.arc.io";
 const proofs: { claim: string; how: string; href: string; cta: string }[] = [
-  { claim: "Contracts written, reviewed and deployed in Arc Studio", how: "The Studio project, its security review and the 34 deploy transactions.", href: STUDIO, cta: "Open the Studio project" },
+  { claim: "Contracts tested, reviewed and deployed in Arc Studio", how: "The Studio project, its security review and the 34 deploy transactions.", href: STUDIO, cta: "Open the Studio project" },
   { claim: "Live on Arc testnet", how: "The Vault contract, owned by our ops wallet after Studio handed it over.", href: `${X}/address/0x7A40b36b012DC19b1f42dd68C13F4daE312e2319`, cta: "View the Vault on Arc" },
   { claim: "A real sale, settled in USDC", how: "One transaction: fund tokens in, claim to the vault, USDC to the seller.", href: `${X}/tx/0x12aefa9df1553daadc4c026566387f0fdde7cf9af6a0153a5eac5e141973a5ee`, cta: "View the sale" },
   { claim: "Chainlink Runtime Environment (CRE) drives the oracle", how: "Three broadcast runs: issuer OK, issuer FAILED and the halt, then restored.", href: `${REPO}/blob/main/cre/README.md`, cta: "Read the CRE logs" },

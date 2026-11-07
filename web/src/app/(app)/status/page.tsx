@@ -99,7 +99,7 @@ export default function StatusPage() {
 
         <Panel title="Demo controls" note="Stand-in issuer" bodyClassName="grid gap-4 p-4">
           <p className="t-caption">
-            This switch flips what the issuer status API returns, which the CRE workflow carries into the oracle.
+            This switch flips what the issuer status API returns. The CRE workflow carries it into the oracle, or the Refresh NAV push between simulations.
             {MODE === "chain" && " It also sets the stand-in issuer on Arc, so settlement stops."}
           </p>
           {MODE === "chain" && (
