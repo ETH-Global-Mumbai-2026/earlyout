@@ -6,7 +6,7 @@ ETHGlobal's rules ask every team to say where and how AI tools were used, by fil
 
 | Tool | Role |
 |---|---|
-| Arc Studio agent (studio.arc.io) | Installed dependencies, ran the contract test suite, ran its security review and Slither, fixed the findings, added tests, created a Circle developer-controlled deployer wallet, deployed and configured the contracts on Arc Testnet, and built a small app in its workspace |
+| Arc Studio agent (studio.arc.io) | Planned the build and the prize scope with us in Thread 1 of our Studio project (from 18:55 on 6 November); then, in Thread 2, installed dependencies, ran the contract test suite, ran its security review and Slither, fixed the findings, added tests, created a Circle developer-controlled deployer wallet, deployed and configured the contracts on Arc Testnet, and built a small app in its workspace |
 | Claude Code (Anthropic; Fable 5.1, later Opus 5.5) | Research, the spec and build plan, the first draft of the contracts, the Next.js app, the Arkiv indexer, the CRE workflow, tests, and these documents, under our direction. On 7 November it also drove an end-to-end test of the live app in our own Chrome, and fixed the 17 bugs it found |
 | Dex (a teammate's AI agent) | Reviewed the deployed app and the code on 7 November and wrote a QA report; we fixed its findings in commits `348ac56` to `5ae7e7a` |
 
@@ -15,7 +15,7 @@ ETHGlobal's rules ask every team to say where and how AI tools were used, by fil
 - Chose the problem (early exit for funds that redeem on a schedule), the customer (fund distributors and issuers), and the three sponsor tracks.
 - Set the design decisions the code implements: verdict first (BUY, REFUSE, HALT), the four-term spread, exposure caps, the one-transaction writedown, claims valued at cost, and the real-versus-stand-in boundary.
 - Decided to accept the open High finding for the testnet demo and document it.
-- Directed every agent turn, reviewed the output, and approved or rejected it. The prompts we sent to Arc Studio are in `docs/studio/`.
+- Directed every agent turn, reviewed the output, and approved or rejected it. The Thread 2 prompts we sent to Arc Studio are in `docs/studio/`.
 - Ran the on-chain operations: funding wallets from faucets, approving the Circle API key and backing up the entity secret, the Arkiv access key, the CRE login, and the Vercel project.
 - Chose the visual direction (first a dithered theme, then the iOS-style black and white redesign, the Averta type we hold a licence for, the mark) and asked for each change to it.
 - Ran the end-to-end test on 7 November with our own MetaMask wallet and approved every signature: Try as judge, a sale, a deposit and a withdrawal.
@@ -48,5 +48,5 @@ ETHGlobal's rules ask every team to say where and how AI tools were used, by fil
 
 - `docs/spec.md`: the build spec.
 - `docs/build-plan.md`: the phased plan, with ownership and checks.
-- `docs/studio/`: every prompt sent to Arc Studio and its outputs.
+- `docs/studio/`: every prompt we sent in Thread 2 of the Studio project and its outputs. Thread 1, the planning conversation, lives in the Studio project itself.
 - The CRE broadcast logs are in `cre/README.md`.

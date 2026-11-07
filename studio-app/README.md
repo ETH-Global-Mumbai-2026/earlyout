@@ -23,7 +23,7 @@ bun run dev               # web app
 
 The web app (one screen) reads the deployed Arc Testnet contracts listed in `contracts/deployments/arc-testnet.json`: pick a fund, enter an amount, see the live vault quote with its four spread terms, and sell the claim from a connected wallet. The vault panel shows total assets, idle USDC, deployed USDC and the share price. Reading works without a wallet; selling needs a wallet on the fund and claim allowlists.
 
-Security review notes: `docs/studio-review.md`.
+Security review notes: `../docs/studio/02-security-review.md`.
 
 ### Environment variables
 
