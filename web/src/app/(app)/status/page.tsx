@@ -60,7 +60,7 @@ export default function StatusPage() {
                   {isScheduled(f.symbol) ? (
                     <Meter label="Vault exposure against the cap" value={Number(f.deployedUsdc)} max={Number(f.capUsdc)} valueText={`${fmtUsdc(f.deployedUsdc)} of ${fmtUsdc(f.capUsdc)}`} />
                   ) : (
-                    <p className="t-caption self-center">Pays within days, so the vault never buys it. Priced here for comparison.</p>
+                    <p className="t-caption self-center">Pays within a day, so the vault never buys it. Priced here for comparison.</p>
                   )}
                 </div>
                 <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-[13px] sm:grid-cols-4">

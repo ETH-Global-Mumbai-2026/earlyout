@@ -99,7 +99,7 @@ export default function Landing() {
         center
         eyebrow="Funds"
         title="One Chainlink pipeline, ten NAV feeds."
-        lede="Every fund below publishes its net asset value (NAV) through a Chainlink feed on Ethereum mainnet, and our Chainlink Runtime Environment (CRE) workflow carries each price to Arc. Earlyout buys from funds that redeem on a schedule, like ACRED. The others already pay within days, so they are priced for comparison, not bought."
+        lede="Every fund below publishes its net asset value (NAV) through a Chainlink feed on Ethereum mainnet, and our Chainlink Runtime Environment (CRE) workflow carries each price to Arc. Earlyout buys from funds with a wait before payout: ACRED, JAAA and USCC. The money-market funds pay within a day, so they are priced for comparison, not bought."
       >
         <Reveal className="card mx-auto max-w-5xl overflow-hidden text-left">
           <div className="overflow-x-auto">

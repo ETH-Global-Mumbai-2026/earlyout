@@ -29,7 +29,7 @@ function FundIcon({ f, muted }: { f: Fund; muted?: boolean }) {
 }
 
 /// The funds as an iOS inset grouped list. Funds that redeem on a schedule are
-/// choices (radio rows); funds that already pay within days follow as a dimmed
+/// choices (radio rows); funds that already pay within a day follow as a dimmed
 /// comparison group that cannot be picked.
 export function FundsTable({
   funds,
@@ -115,7 +115,7 @@ export function FundsTable({
               </li>
             ))}
           </ul>
-          <p className="ios-footer">They already pay within days, so there is nothing to sell early. Shown with their live Chainlink prices.</p>
+          <p className="ios-footer">They already pay within a day, so there is nothing to sell early. Shown with their live Chainlink prices.</p>
         </>
       )}
     </div>

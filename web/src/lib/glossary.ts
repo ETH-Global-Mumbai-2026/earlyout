@@ -39,8 +39,10 @@ export const CATALOG: CatalogFund[] = [
 ];
 
 /// Earlyout buys pending redemptions in funds that pay out on a schedule.
-/// Funds that already pay within days are shown for comparison only.
-const SCHEDULED = new Set(["ACRED", "ACREDd"]);
+/// Funds the vault offers to buy: the ones with a real wait between the redemption
+/// request and the payout. JAAA pays after 7 days and USCC after 3; the rest pay
+/// within a day, so there is nothing to sell early, and they are shown for comparison.
+const SCHEDULED = new Set(["ACRED", "ACREDd", "JAAA", "USCC"]);
 export function isScheduled(symbol: string): boolean {
   return SCHEDULED.has(symbol);
 }

@@ -96,7 +96,7 @@ export default function SellPage() {
             </Panel>
             {sell.isError && <Notice tone="error">{errorMessage(sell.error)}</Notice>}
             <Button size="lg" className="w-full" onClick={onSell} disabled={!canSell} loading={sell.isPending}>
-              {!wallet.isConnected ? "Connect a wallet to sell" : q?.verdict === "BUY" ? `Sell for ${fmtUsdc(q.payout)}` : "Sell"}
+              {!wallet.isConnected ? "Connect a wallet to sell" : q?.verdict === "BUY" ? `Sell for ${fmtUsdc(q.payout, q.payout < 10_000n)}` : "Sell"}
             </Button>
           </div>
 

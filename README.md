@@ -375,7 +375,7 @@ Try it as a judge: open the [Sell](https://earlyout.vercel.app/sell) screen, con
 - The CRE workflow is simulated with `--broadcast`, not deployed to the CRE network. Between simulations our ops wallet is the oracle forwarder and writes the same reports; while it is, it could overwrite a status with a same-timestamp report.
 - Settlement needs a keeper to call `settle` at maturity. Nothing settles on its own.
 - The demo controls on the Risk screen act on the stand-in issuer, testnet only, and need a demo key.
-- Ten listings fill FundRegistry's limit of ten. Earlyout is for funds that redeem on a schedule (ACRED, and ACREDd as its 15-minute demo). The other eight already pay within days, so the app shows them for comparison and does not offer to buy them; their payout terms on Arc are illustrative. The contract itself would still quote them if called directly.
+- Ten listings fill FundRegistry's limit of ten. Earlyout buys from the funds with a wait before payout: ACRED (90 days, with ACREDd as its 15-minute demo), JAAA (7 days) and USCC (3 days). The other six already pay within a day, so the app shows them for comparison and does not offer to buy them; their payout terms on Arc are illustrative. The contract itself would still quote them if called directly.
 - The Arkiv block scan (buys, settlements, NAV history) runs once a day by cron, or on a POST to `/api/arkiv/sync` with no body. Each sale is recorded from its receipt within seconds.
 
 ## Build timeline
