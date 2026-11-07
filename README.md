@@ -124,7 +124,7 @@ sequenceDiagram
 
 ### What Arc Studio did
 
-The project started in Arc Studio. At 18:55 IST on 6 November we pitched Earlyout to Studio's agent in our project thread and planned the build and the prize scope with it. The contract code was then drafted with Claude Code and brought back into the same Studio project, which:
+The project started in Arc Studio. At 18:55 IST on 6 November we pitched Earlyout to Studio's agent and planned the build and the prize scope with it (Thread 1 of the project). The contract code was then drafted with Claude Code and brought back into the same Studio project at 20:46 (Thread 2), which:
 
 1. installed the dependencies, ran the 63-test Foundry suite and its security review, and fixed five Medium findings ([`docs/studio/01-review-and-test.md`](docs/studio/01-review-and-test.md), [`02-security-review.md`](docs/studio/02-security-review.md));
 2. created a Circle developer-controlled wallet in the workspace and deployed and configured all contracts from it, 34 transactions, then handed ownership to our ops wallet ([`03-deploy.md`](docs/studio/03-deploy.md), [`04-deployment-transactions.md`](docs/studio/04-deployment-transactions.md));
@@ -386,8 +386,8 @@ We built and reviewed locally and committed in topic-sized batches, so most comm
 |---|---|---|
 | 5 Nov, 21:00 | Hacking starts at ETHGlobal Mumbai | event schedule |
 | 6 Nov, 16:47 | Repository created: licence, README, build spec, Arkiv friction log | [first commits](https://github.com/ETH-Global-Mumbai-2026/earlyout/commits/main) |
-| 6 Nov, 18:55 | Idea pitched to Arc Studio's agent in our Studio project; build and prize scope planned in the project thread | the Studio project, thread 1 |
-| 6 Nov, about 20:45 | Contracts sent into our Arc Studio project; Studio installs dependencies, runs the suite and its security review, fixes five Medium findings | `docs/studio/01-review-and-test.md`, `02-security-review.md` |
+| 6 Nov, 18:55 | Idea pitched to Arc Studio's agent in our Studio project; build and prize scope planned with it | Studio project, Thread 1 |
+| 6 Nov, 20:46 | Contracts sent into our Arc Studio project (Thread 2); Studio installs dependencies, runs the suite and its security review, fixes five Medium findings | `docs/studio/01-review-and-test.md`, `02-security-review.md` |
 | 6 Nov, about 21:00 | First deployment of the web app to Vercel | Vercel deployment list |
 | 6 Nov, 21:42 | First deploy to Arc Testnet from our own wallet with forge (later superseded) | [tx](https://explorer.testnet.arc.io/tx/0x521ed165a9b18589b7ba634a2c3d64e94e96ba3ae5713cd3d4b5754c562d2fb5) |
 | 6 Nov, 22:09 | Arc Studio deploys and configures all contracts from a Circle developer-controlled wallet: 34 transactions | [first tx](https://explorer.testnet.arc.io/tx/0xaee277c5d705aa62343818e0d7e3a1e8d41736d17cfc072e3f854620c2f5a1aa), `docs/studio/04-deployment-transactions.md` |
