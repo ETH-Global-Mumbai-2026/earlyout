@@ -16,7 +16,7 @@ Built at ETHGlobal Mumbai 2026, from scratch.
 | ETHGlobal showcase and demo video | https://ethglobal.com/showcase/earlyout-sa4m0 |
 | Vault contract | [`0x7A40b36b012DC19b1f42dd68C13F4daE312e2319`](https://explorer.testnet.arc.io/address/0x7A40b36b012DC19b1f42dd68C13F4daE312e2319) |
 | Example transaction | A sale paid in USDC in one transaction: [`0x12aefa…`](https://explorer.testnet.arc.io/tx/0x12aefa9df1553daadc4c026566387f0fdde7cf9af6a0153a5eac5e141973a5ee) |
-| Builder | Satyam Sharma: GitHub [@SatyamDev803](https://github.com/SatyamDev803), X [@Satyam_S1603](https://x.com/Satyam_S1603) |
+| Builders | Satyam Sharma: GitHub [@SatyamDev803](https://github.com/SatyamDev803), X [@Satyam_S1603](https://x.com/Satyam_S1603) · Dex: GitHub [@dexalien](https://github.com/dexalien), X [@dextroalien](https://x.com/dextroalien) · Shreyas Thakur: GitHub [@ShreyasThakur0809](https://github.com/ShreyasThakur0809), X [@Shreyas__Thakur](https://x.com/Shreyas__Thakur) |
 
 Arc reviewers: every item Arc asks for is mapped in [Arc submission checklist](#arc-submission-checklist).
 
@@ -181,7 +181,7 @@ Every item in Arc's judging email, and where to find it.
 | How we used Arc Studio | [What Arc Studio did](#what-arc-studio-did) and [`docs/studio/`](docs/studio) |
 | What Arc enables | [Why Arc](#why-arc-what-it-enables-that-other-chains-would-not), above |
 | Video walkthrough | https://ethglobal.com/showcase/earlyout-sa4m0: a live sale on Arc, the verdicts, the vault, and Arc Studio |
-| Public builder profile | Satyam Sharma: GitHub [@SatyamDev803](https://github.com/SatyamDev803), X [@Satyam_S1603](https://x.com/Satyam_S1603) |
+| Public builder profiles | Satyam Sharma: GitHub [@SatyamDev803](https://github.com/SatyamDev803), X [@Satyam_S1603](https://x.com/Satyam_S1603). Dex: GitHub [@dexalien](https://github.com/dexalien), X [@dextroalien](https://x.com/dextroalien). Shreyas Thakur: GitHub [@ShreyasThakur0809](https://github.com/ShreyasThakur0809), X [@Shreyas__Thakur](https://x.com/Shreyas__Thakur) |
 | Contract addresses | [Contracts](#contracts-arc-testnet-chain-5042002), and `contracts/deployments/*.json` |
 | Example transaction | A sale paid in USDC in one transaction: [`0x12aefa…`](https://explorer.testnet.arc.io/tx/0x12aefa9df1553daadc4c026566387f0fdde7cf9af6a0153a5eac5e141973a5ee). More in [Proof](#proof) |
 
