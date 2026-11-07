@@ -13,7 +13,7 @@ Built at ETHGlobal Mumbai 2026, from scratch.
 | Live app | https://earlyout.vercel.app |
 | Arc Studio project | https://studio.arc.io/app/b9396e35-441e-4180-9444-965d2ad5dc59 |
 | Repository | https://github.com/ETH-Global-Mumbai-2026/earlyout |
-| Demo video | _to be filled at submission_ |
+| ETHGlobal showcase and demo video | https://ethglobal.com/showcase/earlyout-sa4m0 |
 
 **Partner prizes we apply for**
 
