@@ -55,9 +55,9 @@ export function useSell() {
   const done = useInvalidateAll();
   return useMutation({
     mutationFn: (v: { fund: Address; amount: bigint; minPayout: bigint }) => source.sell(v.fund, v.amount, v.minPayout),
-    onSuccess: () => {
-      // Index the sale into Arkiv right away; the Book screen reads from there.
-      void fetch("/api/arkiv/sync", { method: "POST" }).catch(() => undefined);
+    onSuccess: (r) => {
+      // Index this sale into Arkiv right away, from its receipt; the Book reads from there.
+      void fetch("/api/arkiv/sync", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tx: r.hash }) }).catch(() => undefined);
     },
     onSettled: done,
   });

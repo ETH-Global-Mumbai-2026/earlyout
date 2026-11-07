@@ -2,7 +2,7 @@ import "server-only";
 import { ExpirationTime } from "@arkiv-network/sdk";
 import { eq } from "@arkiv-network/sdk/query";
 import { addr, u64 } from "@arkiv-network/sdk/schema";
-import { erc20Abi as viemErc20, parseAbiItem, type Address, type Hex } from "viem";
+import { decodeEventLog, erc20Abi as viemErc20, parseAbiItem, type Address, type Hex } from "viem";
 import { arcTestnet } from "@/lib/chain";
 import { oracleAbi, registryAbi, vaultAbi, wrapperAbi } from "@/lib/abi";
 import { arcPublic } from "@/server/arc";
@@ -67,6 +67,111 @@ export function syncOnce(): Promise<SyncReport> {
   return inflight;
 }
 
+const claimSold = parseAbiItem("event ClaimSold(uint256 indexed claimId, address indexed receiver, uint256 amount, uint256 usdcPaid, uint256 nav, uint16 baseBps, uint16 utilBps, uint16 timeBps, uint16 creditBps)");
+
+type Writer = NonNullable<ReturnType<typeof arkivWriter>>;
+type SoldLog = {
+  args: { claimId?: bigint; receiver?: Address; amount?: bigint; usdcPaid?: bigint; nav?: bigint; baseBps?: number; utilBps?: number; timeBps?: number; creditBps?: number };
+  transactionHash: Hex;
+  blockNumber: bigint;
+};
+
+const blockTimes = new Map<bigint, bigint>();
+async function timeOf(block: bigint) {
+  let t = blockTimes.get(block);
+  if (t === undefined) {
+    t = (await arcPublic.getBlock({ blockNumber: block })).timestamp;
+    if (blockTimes.size > 500) blockTimes.clear();
+    blockTimes.set(block, t);
+  }
+  return t;
+}
+const symbols = new Map<Address, string>();
+async function symbolOf(fund: Address) {
+  let s = symbols.get(fund);
+  if (!s) {
+    s = await arcPublic.readContract({ address: fund, abi: viemErc20, functionName: "symbol" });
+    symbols.set(fund, s);
+  }
+  return s;
+}
+
+/// One Claims entity per sale. Sales in the same fund and window share a claimId,
+/// so a sale is skipped only if its exact transaction is already in the book.
+async function indexSale(writer: Writer, a: Addrs, log: SoldLog, report: SyncReport) {
+  const claimId = log.args.claimId!;
+  const hexId = `0x${claimId.toString(16).padStart(64, "0")}`;
+  const rows = await arkivPublic.select({ $key: true, txHash: true }).from(Claims).where(eq("claimId", hexId)).ownedBy(writer.account.address).limit(100).fetch();
+  if (rows.entities.some((r) => r.txHash.value.toLowerCase() === log.transactionHash.toLowerCase())) return;
+  const [fund, settleAt] = await Promise.all([
+    arcPublic.readContract({ address: a.wrapper, abi: wrapperAbi, functionName: "claimFund", args: [claimId] }),
+    arcPublic.readContract({ address: a.wrapper, abi: wrapperAbi, functionName: "claimSettleAt", args: [claimId] }),
+  ]);
+  const settle = new Date(Number(settleAt) * 1000);
+  if (settle.getTime() <= Date.now() + 60_000) {
+    report.skipped.push(`claim ${hexId.slice(0, 10)} already due`);
+    return;
+  }
+  const r = await writer.client.createEntity(
+    Claims,
+    {
+      claimId: hexId,
+      fund: addr(fund),
+      symbol: await symbolOf(fund),
+      settleAt: u64(settleAt),
+      status: "open",
+      amount: log.args.amount!,
+      usdcPaid: log.args.usdcPaid!,
+      nav: log.args.nav!,
+      baseBps: log.args.baseBps!,
+      utilBps: log.args.utilBps!,
+      timeBps: log.args.timeBps!,
+      creditBps: log.args.creditBps!,
+      seller: addr(log.args.receiver!),
+      holder: addr(a.vault),
+      txHash: log.transactionHash,
+      soldAt: u64(await timeOf(log.blockNumber)),
+    },
+    { expiration: ExpirationTime.atDate(settle) },
+  );
+  report.claimsCreated++;
+  report.txHashes.push(r.txHash);
+}
+
+const recentSales = new Map<string, number>();
+
+/// Index one sale straight from its receipt, so the Book shows it seconds after
+/// the transaction however far the block scan is behind. Only ClaimSold logs
+/// emitted by our Vault are read, and each transaction is handled once per instance.
+export async function syncSale(hash: Hex): Promise<SyncReport> {
+  const writer = arkivWriter();
+  if (!writer) throw new Error("ARKIV_WRITER_PRIVATE_KEY is not set");
+  const a = addrs();
+  const report: SyncReport = { fromBlock: "", toBlock: "", claimsCreated: 0, claimsPatched: 0, navsWritten: 0, fundsRefreshed: 0, skipped: [], txHashes: [] };
+  const key = hash.toLowerCase();
+  if (recentSales.has(key)) return report;
+  if (recentSales.size > 1000) recentSales.clear();
+  recentSales.set(key, Date.now());
+  try {
+    const receipt = await arcPublic.getTransactionReceipt({ hash });
+    report.fromBlock = report.toBlock = receipt.blockNumber.toString();
+    for (const l of receipt.logs) {
+      if (l.address.toLowerCase() !== a.vault.toLowerCase()) continue;
+      let ev;
+      try {
+        ev = decodeEventLog({ abi: [claimSold], data: l.data, topics: l.topics });
+      } catch {
+        continue;
+      }
+      await indexSale(writer, a, { args: ev.args, transactionHash: receipt.transactionHash, blockNumber: receipt.blockNumber }, report);
+    }
+    return report;
+  } catch (e) {
+    recentSales.delete(key);
+    throw e;
+  }
+}
+
 async function syncOnceInner(): Promise<SyncReport> {
   const writer = arkivWriter();
   if (!writer) throw new Error("ARKIV_WRITER_PRIVATE_KEY is not set");
@@ -79,70 +184,13 @@ async function syncOnceInner(): Promise<SyncReport> {
   if (fromBlock > head) return report;
 
   const [sold, bought, settled, navs] = await Promise.all([
-    arcPublic.getLogs({ address: a.vault, event: parseAbiItem("event ClaimSold(uint256 indexed claimId, address indexed receiver, uint256 amount, uint256 usdcPaid, uint256 nav, uint16 baseBps, uint16 utilBps, uint16 timeBps, uint16 creditBps)"), fromBlock, toBlock }),
+    arcPublic.getLogs({ address: a.vault, event: claimSold, fromBlock, toBlock }),
     arcPublic.getLogs({ address: a.vault, event: parseAbiItem("event ClaimBought(uint256 indexed claimId, address indexed buyer, uint256 amount, uint256 usdcCost)"), fromBlock, toBlock }),
     arcPublic.getLogs({ address: a.vault, event: parseAbiItem("event ClaimSettled(uint256 indexed claimId, uint256 usdcCollected)"), fromBlock, toBlock }),
     arcPublic.getLogs({ address: a.oracle, event: parseAbiItem("event NavUpdated(address indexed fund, uint256 nav, uint64 updatedAt, uint8 status)"), fromBlock, toBlock }),
   ]);
 
-  const blockTimes = new Map<bigint, bigint>();
-  async function timeOf(block: bigint) {
-    let t = blockTimes.get(block);
-    if (t === undefined) {
-      t = (await arcPublic.getBlock({ blockNumber: block })).timestamp;
-      blockTimes.set(block, t);
-    }
-    return t;
-  }
-  const symbols = new Map<Address, string>();
-  async function symbolOf(fund: Address) {
-    let s = symbols.get(fund);
-    if (!s) {
-      s = await arcPublic.readContract({ address: fund, abi: viemErc20, functionName: "symbol" });
-      symbols.set(fund, s);
-    }
-    return s;
-  }
-
-  for (const log of sold) {
-    const claimId = log.args.claimId!;
-    const hexId = `0x${claimId.toString(16).padStart(64, "0")}`;
-    const exists = await arkivPublic.select({ $key: true }).from(Claims).where(eq("claimId", hexId)).ownedBy(writer.account.address).limit(1).fetch();
-    if (exists.entities.length) continue;
-    const [fund, settleAt] = await Promise.all([
-      arcPublic.readContract({ address: a.wrapper, abi: wrapperAbi, functionName: "claimFund", args: [claimId] }),
-      arcPublic.readContract({ address: a.wrapper, abi: wrapperAbi, functionName: "claimSettleAt", args: [claimId] }),
-    ]);
-    const settle = new Date(Number(settleAt) * 1000);
-    if (settle.getTime() <= Date.now() + 60_000) {
-      report.skipped.push(`claim ${hexId.slice(0, 10)} already due`);
-      continue;
-    }
-    const r = await writer.client.createEntity(
-      Claims,
-      {
-        claimId: hexId,
-        fund: addr(fund),
-        symbol: await symbolOf(fund),
-        settleAt: u64(settleAt),
-        status: "open",
-        amount: log.args.amount!,
-        usdcPaid: log.args.usdcPaid!,
-        nav: log.args.nav!,
-        baseBps: log.args.baseBps!,
-        utilBps: log.args.utilBps!,
-        timeBps: log.args.timeBps!,
-        creditBps: log.args.creditBps!,
-        seller: addr(log.args.receiver!),
-        holder: addr(a.vault),
-        txHash: log.transactionHash,
-        soldAt: u64(await timeOf(log.blockNumber)),
-      },
-      { expiration: ExpirationTime.atDate(settle) },
-    );
-    report.claimsCreated++;
-    report.txHashes.push(r.txHash);
-  }
+  for (const log of sold) await indexSale(writer, a, log, report);
 
   const patches: { claimId: bigint; status: string; holder: Address }[] = [
     ...bought.map((l) => ({ claimId: l.args.claimId!, status: "bought", holder: l.args.buyer! })),
@@ -150,12 +198,12 @@ async function syncOnceInner(): Promise<SyncReport> {
   ];
   for (const p of patches) {
     const hexId = `0x${p.claimId.toString(16).padStart(64, "0")}`;
-    const found = await arkivPublic.select({ $key: true }).from(Claims).where(eq("claimId", hexId)).ownedBy(writer.account.address).limit(1).fetch();
-    const row = found.entities[0];
-    if (!row) continue;
-    const r = await writer.client.patchEntity(Claims, row.$key, { set: { status: p.status, holder: addr(p.holder) } });
-    report.claimsPatched++;
-    report.txHashes.push(r.txHash);
+    const found = await arkivPublic.select({ $key: true }).from(Claims).where(eq("claimId", hexId)).ownedBy(writer.account.address).limit(100).fetch();
+    for (const row of found.entities) {
+      const r = await writer.client.patchEntity(Claims, row.$key, { set: { status: p.status, holder: addr(p.holder) } });
+      report.claimsPatched++;
+      report.txHashes.push(r.txHash);
+    }
   }
 
   for (const log of navs) {
