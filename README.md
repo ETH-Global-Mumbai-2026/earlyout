@@ -126,7 +126,7 @@ sequenceDiagram
 
 The project started in Arc Studio. At 18:55 IST on 6 November we pitched Earlyout to Studio's agent and planned the build and the prize scope with it (Thread 1 of the project). The contract code was then drafted with Claude Code and brought back into the same Studio project at 20:46 (Thread 2), which:
 
-1. installed the dependencies, ran the 63-test Foundry suite and its security review, and fixed five Medium findings ([`docs/studio/01-review-and-test.md`](docs/studio/01-review-and-test.md), [`02-security-review.md`](docs/studio/02-security-review.md));
+1. installed the dependencies, ran our 50-test Foundry suite and its security review, fixed five Medium findings and added 13 tests (63 pass) ([`docs/studio/01-review-and-test.md`](docs/studio/01-review-and-test.md), [`02-security-review.md`](docs/studio/02-security-review.md));
 2. created a Circle developer-controlled wallet in the workspace and deployed and configured all contracts from it, 34 transactions, then handed ownership to our ops wallet ([`03-deploy.md`](docs/studio/03-deploy.md), [`04-deployment-transactions.md`](docs/studio/04-deployment-transactions.md));
 3. built a web app inside Studio against the deployed contracts ([`studio-app/`](studio-app), [`05-studio-web-app.md`](docs/studio/05-studio-web-app.md));
 4. deployed eight more fund stand-ins on 7 November ([`06-more-funds.md`](docs/studio/06-more-funds.md)).
@@ -158,7 +158,7 @@ Circle tools used: USDC on Arc, Circle Wallets (the developer-controlled deploye
 
 | Arc requirement | Where we meet it |
 |---|---|
-| Built in Arc Studio, shareable project URL | Studio project linked at the top. Studio has no public share option for projects, so the link opens for signed-in Studio users with access; every prompt and output is also mirrored in [`docs/studio/`](docs/studio) |
+| Built in Arc Studio, shareable project URL | Studio project linked at the top. Studio has no public share option for projects, so the link opens for signed-in Studio users with access; every Thread 2 prompt and output is also mirrored in [`docs/studio/`](docs/studio) |
 | Advanced stablecoin logic | Conditional verdicts, same-transaction multi-step settlement, USDC accounting and write-downs, above |
 | Connected to a web app | [earlyout.vercel.app](https://earlyout.vercel.app) and the Studio-built app in [`studio-app/`](studio-app) |
 | Working frontend and backend, architecture diagram | Live app, API routes in [`web/src/app/api/`](web/src/app/api), diagrams above |
@@ -224,10 +224,10 @@ The logs, plus a ten-fund run under CRE's default limits, are in [`cre/README.md
 
 | CRE requirement | Where we meet it |
 |---|---|
-| A CRE workflow used as an orchestration layer | `nav-bridge` is the only path from Chainlink NAV and issuer status to the contracts |
+| A CRE workflow used as an orchestration layer | `nav-bridge` is the designed path from Chainlink NAV and issuer status to the contracts; between simulations `/api/nav/push` writes the identical report |
 | Integrates a blockchain with an external API or data source | Ethereum mainnet feeds and an HTTP API in, a signed report to Arc out |
 | Successful simulation through the CRE CLI | Three broadcast runs with transaction hashes, above |
-| Meaningfully used | Every quote's price and every HALT come from what it writes |
+| Meaningfully used | Every quote's price and every HALT come from the report it defines, delivered by the workflow in simulation and by `/api/nav/push` between simulations |
 
 ---
 
@@ -355,7 +355,7 @@ We reused only public libraries, unchanged:
 | [`cre/`](cre) | Chainlink CRE project and the nav-bridge workflow |
 | [`studio-app/`](studio-app) | The app Arc Studio built in its own workspace against the deployed contracts (pulled with `arc-studio pull`; it runs in the Studio preview) |
 | [`arkiv/`](arkiv) | Arkiv judging files |
-| [`docs/`](docs) | `spec.md`, `build-plan.md`, `demo-script.md`, `ai-usage.md`, and every Arc Studio prompt and output in `studio/` |
+| [`docs/`](docs) | `spec.md`, `build-plan.md`, `demo-script.md`, `ai-usage.md`, and the Arc Studio prompts and outputs in `studio/` |
 | [`scripts/check.sh`](scripts/check.sh) | Local CI gate: forge test, lint, typecheck, build |
 
 ## Run it
@@ -376,7 +376,7 @@ Try it as a judge: open the [Sell](https://earlyout.vercel.app/sell) screen, con
 - Settlement needs a keeper to call `settle` at maturity. Nothing settles on its own.
 - The demo controls on the Risk screen act on the stand-in issuer, testnet only, and need a demo key.
 - Ten listings fill FundRegistry's limit of ten. Earlyout is for funds that redeem on a schedule (ACRED, and ACREDd as its 15-minute demo). The other eight already pay within days, so the app shows them for comparison and does not offer to buy them; their payout terms on Arc are illustrative. The contract itself would still quote them if called directly.
-- The Arkiv block scan, which records buys, settlements and NAV history, runs after each sale and once a day. Sales themselves are recorded from their receipts within seconds.
+- The Arkiv block scan (buys, settlements, NAV history) runs once a day by cron, or on a POST to `/api/arkiv/sync` with no body. Each sale is recorded from its receipt within seconds.
 
 ## Build timeline
 
@@ -400,7 +400,7 @@ We built and reviewed locally and committed in topic-sized batches, so most comm
 | 7 Nov, 00:00 | Arc Studio builds an app in its own workspace against the deployed contracts | `studio-app/`, `docs/studio/05-studio-web-app.md` |
 | 7 Nov, about 02:00 | Arc Studio deploys eight more fund stand-ins, each priced from its own Chainlink NAV feed | [first tx](https://explorer.testnet.arc.io/tx/0x50ce522234e26b921cd7e8c42d48f682fced7e8ec2eefe750cda961ac919cd50), `docs/studio/06-more-funds.md` |
 | 7 Nov, about 02:10 | Ops wallet lists them in FundRegistry and reports their Chainlink NAVs | [first listing](https://explorer.testnet.arc.io/tx/0xf2a12e5d056e8790fffa0bb6d041b0f136a80c93c4ea4c593b3775afa4949918) |
-| 7 Nov, 05:00 to 05:45 | End-to-end QA with a real MetaMask wallet; 17 fixes shipped, including recording each sale on Arkiv from its receipt | commits `71ae001` to `eff70b2` |
+| 7 Nov, 05:00 to 05:45 | End-to-end QA with a real MetaMask wallet; 17 fixes in nine commits, including recording each sale on Arkiv from its receipt | commits `71ae001` to `eff70b2` |
 
 From 7 November on, work is committed in small topic commits, several at a time after each round of review.
 
@@ -410,11 +410,11 @@ From 7 November on, work is committed in small topic commits, several at a time 
 
 **Arkiv, Build on Arkiv (from scratch).** The public book of open claims lives on Arkiv. Each sale on Arc becomes an entity that expires at its payout date; a fund directory expires a day after its last refresh; NAV history is kept for 30 days. The Book screen and the Vault's positions read only from Arkiv, filtered to our writer wallet. Feedback is in `arkiv/friction.md`; the main points: a named schema does not stop another wallet writing entities under it, so every read must filter by owner; and there is no unique key, so making a write idempotent takes a read first.
 
-**Chainlink, Best workflow with CRE.** `cre/nav-bridge` reads the Chainlink NAV feed of each of the ten listed funds on Ethereum mainnet (ACRED, plus eight NAVLink feeds such as Janus Henderson's JAAA) and our issuer status API, and writes a signed report to NavOracle on Arc through the Keystone forwarder. The vault halts on what it writes. Simulated with `--broadcast` three times, including the failure path; logs in `cre/README.md`. Feedback: simulating with `--broadcast` against Arc worked first time once the oracle pointed at the mock forwarder. One snag: zod's `z.string().url()` in our config schema rejected a valid https URL inside the workflow runtime, which surfaced only as "Invalid URL" at engine start; a plain regex works.
+**Chainlink, Best workflow with CRE.** `cre/nav-bridge` reads the Chainlink NAV feed of each of the ten listed funds on Ethereum mainnet (ACRED, plus eight NAVLink feeds such as Janus Henderson's JAAA) and our issuer status API, and writes a signed report to NavOracle on Arc through the forwarder. The vault halts on what it writes. Simulated with `--broadcast` three times through the simulation forwarder (ACRED and ACREDd, including the failure path), plus a ten-fund dry run under CRE's default limits; logs in `cre/README.md`. Between simulations our server writes the identical report. Feedback: simulating with `--broadcast` against Arc worked first time once the oracle pointed at the mock forwarder. One snag: zod's `z.string().url()` in our config schema rejected a valid https URL inside the workflow runtime, which surfaced only as "Invalid URL" at engine start; a plain regex works.
 
 ## How we used AI
 
-See [`docs/ai-usage.md`](docs/ai-usage.md) for the file-by-file record. In short: Arc Studio's agent reviewed, tested and deployed the contracts; Claude Code (Fable 5.1, later Opus 5.5) wrote the contracts' first draft, the web app, the indexer, the CRE workflow and these documents under our direction; every design decision, prompt and check was ours. The spec and planning files we directed it with are [`docs/spec.md`](docs/spec.md) and [`docs/build-plan.md`](docs/build-plan.md); every prompt sent to Arc Studio is in [`docs/studio/`](docs/studio).
+See [`docs/ai-usage.md`](docs/ai-usage.md) for the file-by-file record. In short: Arc Studio's agent reviewed, tested and deployed the contracts; Claude Code (Fable 5.1, later Opus 5.5) wrote the contracts' first draft, the web app, the indexer, the CRE workflow and these documents under our direction; every design decision, prompt and check was ours. The spec and planning files we directed it with are [`docs/spec.md`](docs/spec.md) and [`docs/build-plan.md`](docs/build-plan.md); every Thread 2 prompt sent to Arc Studio is in [`docs/studio/`](docs/studio).
 
 ## Licence
 

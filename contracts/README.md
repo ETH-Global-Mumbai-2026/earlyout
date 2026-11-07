@@ -1,6 +1,6 @@
 # Earlyout contracts
 
-Foundry project. Written, tested and security-reviewed in Arc Studio (prompts and the review report are in `../docs/studio/`), pulled here with `arc-studio pull`.
+Foundry project. Drafted with Claude Code, then tested, security-reviewed, fixed and deployed in Arc Studio (prompts and the review report are in `../docs/studio/`), pulled here with `arc-studio pull`.
 
 ```bash
 forge install foundry-rs/forge-std OpenZeppelin/openzeppelin-contracts@v5.7.0 --no-git
