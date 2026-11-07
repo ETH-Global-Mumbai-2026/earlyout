@@ -44,7 +44,36 @@ export default function BookPage() {
             </Panel>
           )}
           <Panel title="Open claims" note={`${rows.length} open · ${fmtUsdc(total)} deployed`}>
-            <div className="overflow-x-auto">
+            {/* Phones: one card per claim instead of a nine-column table. */}
+            <ul className="sm:hidden">
+              {rows.map((c) => (
+                <li key={c.key} className="ios-row block">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-[17px] font-semibold">{c.symbol}</span>
+                    <span className="num text-[17px] font-semibold">{fmtUsdc(BigInt(c.usdcPaid), true)}</span>
+                  </div>
+                  <div className="mt-0.5 flex justify-between gap-3 text-[14px] text-ink-2">
+                    <span className="num">
+                      {fmtUnits(BigInt(c.amount))} units · {((c.baseBps + c.utilBps + c.timeBps + c.creditBps) / 100).toFixed(2)}% spread
+                    </span>
+                    <span className="num whitespace-nowrap">pays in {timeUntil(c.settleAt, now)}</span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap justify-between gap-x-3 text-[13px] text-muted">
+                    <span className="num">Seller {shortAddr(c.seller)}</span>
+                    <span className="space-x-3">
+                      <a className="text-accent hover:underline" href={txUrl(c.txHash)} target="_blank" rel="noreferrer">
+                        Arc tx
+                      </a>
+                      <a className="text-accent hover:underline" href={`${book.data.explorer}/entity/${c.key}`} target="_blank" rel="noreferrer">
+                        Arkiv entity
+                      </a>
+                    </span>
+                  </div>
+                </li>
+              ))}
+              {rows.length === 0 && <li className="ios-row text-muted">No open claims yet. Sell one and it appears here within seconds.</li>}
+            </ul>
+            <div className="hidden overflow-x-auto sm:block">
               <table className="tbl min-w-[860px]">
                 <thead>
                   <tr>
