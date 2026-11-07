@@ -8,7 +8,7 @@ ETHGlobal's rules ask every team to say where and how AI tools were used, by fil
 |---|---|
 | Arc Studio agent (studio.arc.io) | Planned the build and the prize scope with us in Thread 1 of our Studio project (from 18:55 on 6 November); then, in Thread 2, installed dependencies, ran the contract test suite, ran its security review and Slither, fixed the findings, added tests, created a Circle developer-controlled deployer wallet, deployed and configured the contracts on Arc Testnet, and built a small app in its workspace |
 | Claude Code (Anthropic; Fable 5.1, later Opus 5.5) | Research, the spec and build plan, the first draft of the contracts, the Next.js app, the Arkiv indexer, the CRE workflow, tests, and these documents, under our direction. On 7 November it also drove an end-to-end test of the live app in our own Chrome, and fixed the 17 bugs it found |
-| Dex (a teammate's AI agent) | Reviewed the deployed app and the code on 7 November and wrote a QA report; we fixed its findings in commits `348ac56` to `5ae7e7a` |
+| An AI agent run by Dex, our teammate | Reviewed the deployed app and the code on 7 November and wrote a QA report, under Dex's direction; we fixed its findings in commits `348ac56` to `5ae7e7a` |
 
 ## What the team did
 
