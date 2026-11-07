@@ -44,9 +44,10 @@ export function fmtDate(unixSeconds: number) {
 export function timeAgo(unixSeconds: number, now = Date.now() / 1000) {
   const s = Math.max(0, Math.floor(now - unixSeconds));
   if (s < 60) return `${s}s ago`;
-  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
-  return `${Math.floor(s / 86400)} d ago`;
+  // Rounded the same way as fmtDuration, so "10 hours of 4 days" and "10 h ago" agree.
+  if (s < 3600) return `${Math.max(1, Math.round(s / 60))} min ago`;
+  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
+  return `${Math.round(s / 86400)} d ago`;
 }
 
 export function timeUntil(unixSeconds: number, now = Date.now() / 1000) {

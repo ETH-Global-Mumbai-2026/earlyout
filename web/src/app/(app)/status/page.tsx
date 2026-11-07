@@ -7,6 +7,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { demoKey, errorMessage, setDemoKey, useFunds, useIssuerFailed, useMarkImpaired, usePushNav, useSetIssuerFailed, useWallet } from "@/hooks/useEarlyout";
 import { useNow } from "@/hooks/useNow";
 import { MODE } from "@/lib/addresses";
+import { isScheduled } from "@/lib/glossary";
 import { fmtDate, fmtDuration, fmtNav, fmtUsdc, timeAgo } from "@/lib/format";
 
 export default function StatusPage() {
@@ -56,7 +57,11 @@ export default function StatusPage() {
               >
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Meter label="NAV age against the halt limit" value={now - f.navUpdatedAt} max={f.maxAge} valueText={`${fmtDuration(Math.max(0, now - f.navUpdatedAt))} of ${fmtDuration(f.maxAge)}`} />
-                  <Meter label="Vault exposure against the cap" value={Number(f.deployedUsdc)} max={Number(f.capUsdc)} valueText={`${fmtUsdc(f.deployedUsdc)} of ${fmtUsdc(f.capUsdc)}`} />
+                  {isScheduled(f.symbol) ? (
+                    <Meter label="Vault exposure against the cap" value={Number(f.deployedUsdc)} max={Number(f.capUsdc)} valueText={`${fmtUsdc(f.deployedUsdc)} of ${fmtUsdc(f.capUsdc)}`} />
+                  ) : (
+                    <p className="t-caption self-center">Pays within days, so the vault never buys it. Priced here for comparison.</p>
+                  )}
                 </div>
                 <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-[13px] sm:grid-cols-4">
                   <div>
@@ -109,7 +114,7 @@ export default function StatusPage() {
                   setKey(e.target.value);
                   setDemoKey(e.target.value);
                 }}
-                placeholder="Required to flip the issuer"
+                placeholder="Required for these controls"
                 className="font-mono text-[13px]"
                 aria-label="Demo key"
               />
@@ -119,15 +124,15 @@ export default function StatusPage() {
             <span>
               Issuer status: <strong>{failed.data === undefined ? "…" : failed.data ? "FAILED" : "OK"}</strong>
             </span>
-            <Button variant={failed.data ? "secondary" : "danger"} size="sm" onClick={() => setFailed.mutate(!failed.data)} loading={setFailed.isPending} disabled={failed.data === undefined}>
+            <Button variant={failed.data ? "secondary" : "danger"} size="sm" onClick={() => setFailed.mutate(!failed.data)} loading={setFailed.isPending} disabled={failed.data === undefined || (MODE === "chain" && !key.trim())}>
               {failed.data ? "Restore issuer" : "Simulate issuer failure"}
             </Button>
           </div>
           {setFailed.isError && <Notice tone="error">{errorMessage(setFailed.error)}</Notice>}
           {MODE === "chain" && (
             <div className="flex items-center justify-between gap-3 border-t border-hairline pt-4">
-              <span className="t-caption">Carry the latest Chainlink NAV and issuer status to the oracle now.</span>
-              <Button variant="secondary" size="sm" className="shrink-0 whitespace-nowrap" onClick={() => pushNav.mutate()} loading={pushNav.isPending}>
+              <span className="t-caption">Carry the latest Chainlink NAV and issuer status to the oracle now. Needs the demo key.</span>
+              <Button variant="secondary" size="sm" className="shrink-0 whitespace-nowrap" onClick={() => pushNav.mutate()} loading={pushNav.isPending} disabled={!key.trim()}>
                 Refresh NAV
               </Button>
             </div>
