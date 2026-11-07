@@ -13,6 +13,8 @@ import { useBook } from "@/hooks/useBook";
 import { addresses } from "@/lib/addresses";
 import { fmtDate, fmtUnits, fmtUsdc, parseUnitsSafe } from "@/lib/format";
 
+const GAS_RESERVE = 100_000n; // 0.10 USDC at 6 decimals
+
 function Figure({ label, value, note, tone }: { label: string; value: string; note?: string; tone?: string }) {
   return (
     <div className="min-w-0 px-4 py-3">
@@ -39,16 +41,22 @@ export default function VaultPage() {
     mode === "deposit"
       ? account.data?.maxDeposit === 0n
       : account.data !== undefined && account.data.shares > 0n && account.data.maxWithdraw === 0n && account.data.sharesValue > 0n;
-  const max = mode === "deposit" ? account.data?.usdc : account.data?.maxWithdraw;
+  // Arc pays gas in USDC, so Max on a deposit keeps a little back for the transaction itself.
+  const usdcSpendable = account.data ? (account.data.usdc > GAS_RESERVE ? account.data.usdc - GAS_RESERVE : 0n) : undefined;
+  const max = mode === "deposit" ? usdcSpendable : account.data?.maxWithdraw;
   const over = amount !== null && max !== undefined && amount > max;
   const can = amount !== null && amount > 0n && !over && wallet.isConnected && !busy && !paused;
   const err = deposit.error ?? withdraw.error;
 
   async function go() {
     if (amount === null) return;
-    if (mode === "deposit") await deposit.mutateAsync(amount);
-    else await withdraw.mutateAsync(amount);
-    setText("");
+    try {
+      if (mode === "deposit") await deposit.mutateAsync(amount);
+      else await withdraw.mutateAsync(amount);
+      setText("");
+    } catch {
+      // Shown in the ticket through the mutation's error.
+    }
   }
 
   const v = vault.data;
@@ -123,7 +131,7 @@ export default function VaultPage() {
           {v && funds.data && (
             <Panel title="Allocation and exposure" bodyClassName="grid gap-6 p-5 sm:grid-cols-[auto_1fr] sm:items-center">
               <div className="flex items-center gap-5">
-                <Ring value={Number(v.deployed)} max={Number(v.idle + v.deployed)} size={112} stroke={13} color="var(--color-accent)" label={`Deployed ${util.toFixed(1)}% of the vault`}>
+                <Ring value={Number(v.deployed)} max={Number(v.idle + v.deployed)} size={112} stroke={13} color="var(--color-viz-3)" label={`Deployed ${util.toFixed(1)}% of the vault`}>
                   <span>
                     <span className="num block text-[22px] font-bold leading-none">{util.toFixed(1)}%</span>
                     <span className="t-caption">deployed</span>
@@ -174,7 +182,7 @@ export default function VaultPage() {
               Liquidity provider (LP) {mode === "deposit" ? "deposits" : "withdrawals"} are paused until the fund writedown is marked on the Risk screen.
             </Notice>
           )}
-          {over && <Notice tone="warn">{mode === "deposit" ? "More USDC than you hold." : "More than can be withdrawn right now."}</Notice>}
+          {over && <Notice tone="warn">{mode === "deposit" ? "More USDC than you can deposit. Keep 0.10 USDC for gas." : "More than can be withdrawn right now."}</Notice>}
           {err && <Notice tone="error">{errorMessage(err)}</Notice>}
           <Button size="lg" className="w-full" onClick={go} disabled={!can} loading={busy}>
             {!wallet.isConnected ? "Connect a wallet" : mode === "deposit" ? "Deposit USDC" : "Withdraw USDC"}
