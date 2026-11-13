@@ -25,7 +25,7 @@ export function mockBook() {
   });
   return {
     claims: [
-      claim(1, "ACREDd", now + 11 * 60, 5n * 10n ** 17n, 5_558_000n),
+      claim(1, "ACREDd", now + 11 * 60, 5n * 10n ** 15n, 5_558_000n),
       claim(2, "ACRED", now + 89 * 86400, 10n ** 16n, 10_470_000n),
       claim(3, "ACRED", now + 89 * 86400, 2n * 10n ** 16n, 20_930_000n),
     ],
