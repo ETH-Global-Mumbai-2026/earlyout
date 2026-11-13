@@ -73,6 +73,46 @@ export function useWithdraw() {
   return useMutation({ mutationFn: (amount: bigint) => source.withdraw(amount), onSettled: done });
 }
 
+/// What the vault holds in a claim and what `amount` of it costs a buyer.
+export function useClaimPosition(claimId: bigint | undefined, amount: bigint | null) {
+  return useQuery({
+    queryKey: ["claim", claimId?.toString(), amount?.toString()],
+    queryFn: () => source.claimPosition(claimId!, amount ?? undefined),
+    enabled: claimId !== undefined,
+    refetchInterval: 30_000,
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useBuy() {
+  const done = useInvalidateAll();
+  return useMutation({
+    mutationFn: (v: { claimId: bigint; amount: bigint; maxCost: bigint }) => source.buy(v.claimId, v.amount, v.maxCost),
+    onSuccess: (r) => {
+      // Record the buy on Arkiv right away, so the Book updates within seconds.
+      if (MODE !== "chain") return;
+      void fetch("/api/arkiv/sync", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tx: r.hash }) }).catch(() => undefined);
+    },
+    onSettled: done,
+  });
+}
+
+/// The claims the connected wallet holds, bought from the vault.
+export function useHoldings() {
+  const { address } = useWallet();
+  return useQuery({
+    queryKey: ["holdings", address],
+    queryFn: () => source.holdings(address!),
+    enabled: !!address,
+    refetchInterval: 30_000,
+  });
+}
+
+export function useRedeem() {
+  const done = useInvalidateAll();
+  return useMutation({ mutationFn: (v: { claimId: bigint; amount: bigint }) => source.redeem(v.claimId, v.amount), onSettled: done });
+}
+
 export function useMarkImpaired() {
   const done = useInvalidateAll();
   return useMutation({ mutationFn: (fund: Address) => source.markImpaired(fund), onSettled: done });
@@ -112,7 +152,7 @@ export function usePushNav() {
   });
 }
 
-export function useTryAsJudge() {
+export function useGetTestTokens() {
   const done = useInvalidateAll();
   return useMutation({
     mutationFn: async (address: Address) => {

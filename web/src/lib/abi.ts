@@ -58,7 +58,10 @@ export const wrapperAbi = parseAbi([
   "function depositAndSell(address fund, uint256 amount, uint256 minPayout) returns (uint256 claimId, uint256 payout)",
   "function claimFund(uint256 claimId) view returns (address)",
   "function claimSettleAt(uint256 claimId) view returns (uint64)",
+  "function collect(uint256 claimId) returns (uint256 usdcCollected)",
+  "function redeem(uint256 claimId, uint256 amount) returns (uint256 usdcPaid)",
   "event ClaimMinted(uint256 indexed claimId, address indexed fund, uint64 settleAt, address indexed owner, uint256 amount)",
+  "event ClaimRedeemed(uint256 indexed claimId, address indexed holder, uint256 amount, uint256 usdcPaid)",
 ]);
 
 export const vaultAbi = parseAbi([
@@ -67,6 +70,7 @@ export const vaultAbi = parseAbi([
   "function quoteFund(address fund, uint256 amount) view returns (Quote)",
   "function sell(uint256 claimId, uint256 amount, uint256 minPayout, address receiver) returns (uint256)",
   "function buyPrice(uint256 claimId, uint256 amount) view returns (uint256)",
+  "function positions(uint256 claimId) view returns (uint256 amount, uint256 cost)",
   "function sharePrice() view returns (uint256)",
   "function buy(uint256 claimId, uint256 amount, uint256 maxCost) returns (uint256)",
   "function settle(uint256 claimId) returns (uint256)",

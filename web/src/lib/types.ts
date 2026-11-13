@@ -53,9 +53,41 @@ export type Account = {
   sharesValue: bigint;
   maxWithdraw: bigint;
   maxDeposit: bigint;
+  claimAllowlisted: boolean; // may hold claims, so may buy one from the vault
 };
 
 export type Receipt = { hash: Hex; claimId?: bigint; payout?: bigint };
+
+/// What the vault holds in one claim id, priced for a buyer: NAV minus the
+/// time and credit terms for the time left. The buyer collects full NAV at payout.
+export type ClaimPosition = {
+  claimId: bigint;
+  fund: Address;
+  symbol: string;
+  settleAt: number;
+  held: bigint; // claim units the vault holds (18dp)
+  cost: bigint; // USDC the vault paid for them (6dp)
+  nav: bigint; // 18dp
+  timeBps: number;
+  creditBps: number;
+  amount: bigint; // units priced (18dp)
+  price: bigint; // USDC a buyer pays for `amount` (6dp)
+  value: bigint; // `amount` at NAV (6dp), what the issuer pays at payout
+  verdict: Verdict; // HALT blocks buying too
+  reason: string;
+};
+
+/// A claim a wallet holds after buying it from the vault.
+export type Holding = {
+  claimId: bigint;
+  fund: Address;
+  symbol: string;
+  settleAt: number;
+  amount: bigint; // units held (18dp)
+  nav: bigint; // 18dp
+  collected: boolean; // issuer already paid the wrapper for this claim
+  value: bigint; // amount at NAV (6dp)
+};
 
 export interface Source {
   readonly mode: "mock" | "chain";
@@ -68,6 +100,10 @@ export interface Source {
   deposit(amount: bigint): Promise<Receipt>;
   withdraw(amount: bigint): Promise<Receipt>;
   markImpaired(fund: Address): Promise<Receipt>;
+  claimPosition(claimId: bigint, amount?: bigint): Promise<ClaimPosition>;
+  buy(claimId: bigint, amount: bigint, maxCost: bigint): Promise<Receipt>;
+  holdings(address: Address): Promise<Holding[]>;
+  redeem(claimId: bigint, amount: bigint): Promise<Receipt>;
 }
 
 export function roundUpToWindow(t: number, window: number) {
