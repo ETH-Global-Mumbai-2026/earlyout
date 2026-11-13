@@ -1,51 +1,61 @@
 import type { Metadata } from "next";
-import { CTA, DataRows, PageHeader, Section } from "@/components/site/blocks";
+import { CTA, PageHeader, Section } from "@/components/site/blocks";
 import { REPO } from "@/components/site/links";
+import { COPY } from "@/lib/copy";
 
-export const metadata: Metadata = { title: "Security" };
+const C = COPY.security;
+
+export const metadata: Metadata = { title: C.meta.title };
+
+const findings: [string, string, string][] = [
+  ["M1 fixed", "LP exit before a writedown", "LP flows pause until markImpaired"],
+  ["M2 fixed", "A future-dated NAV could freeze a fund", "Reports over 5 minutes ahead are rejected"],
+  ["M3 fixed", "Shared CRE forwarder", "Optional workflow owner and id pinning"],
+  ["M4 fixed", "Settlement on a bad NAV", "Settle reverts; retry later"],
+  ["M5 fixed", "Allowlist skipped on depositAndSell", "Both entry paths enforce it"],
+  ["H1 open", "LP gain sniping at settlement", "Accepted for testnet, see below"],
+];
+
+const trust: [string, string, string][] = [
+  ["Ops wallet", "Owns every contract", "Can list funds and set terms"],
+  ["Oracle forwarder", "Ops wallet or CRE", "Can write NAV and issuer status"],
+  ["Keeper", "Anyone", "Must call settle at maturity"],
+  ["Stand-ins", "Fund, issuer, status API", "The real ones are permissioned"],
+];
+
+function Rows({ label, rows }: { label: string; rows: [string, string, string][] }) {
+  return (
+    <div className="overflow-x-auto border-y border-ink">
+      <table className="tbl min-w-[560px]" aria-label={label}>
+        <tbody>
+          {rows.map(([a, b, c]) => (
+            <tr key={a}>
+              <td className="font-mono text-[12px] text-ink">{a}</td>
+              <td className="!whitespace-normal text-ink">{b}</td>
+              <td className="!whitespace-normal text-ink-2">{c}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export default function Security() {
   return (
     <>
-      <PageHeader
-        eyebrow="Security"
-        title="Reviewed, tested, and plain about what is left."
-        lede="The contracts went through Arc Studio's security review and Slither before deployment. This is a hackathon build on testnet, not audited software."
-      />
-      <Section eyebrow="Review" title="Five Medium findings fixed, one High left open by decision.">
-        <div className="card max-w-3xl p-6">
-          <DataRows
-            rows={[
-              ["M1 fixed", "Liquidity provider (LP) exit before a writedown", "LP flows pause until markImpaired"],
-              ["M2 fixed", "Future-dated net asset value (NAV) could freeze a fund", "reports over 5 min ahead rejected"],
-              ["M3 fixed", "Shared Chainlink Runtime Environment (CRE) forwarder", "optional workflow owner and id pinning"],
-              ["M4 fixed", "Settlement on a bad NAV", "settle reverts, retry later"],
-              ["M5 fixed", "Allowlist skipped on depositAndSell", "both entry paths enforce it"],
-              ["H1 open", "LP gain sniping at settlement", "accepted for testnet, see below"],
-            ]}
-          />
-        </div>
-        <p className="t-caption mt-4">63 Foundry tests pass. Full report and proof of concept in docs/studio in the repository.</p>
+      <PageHeader eyebrow={C.kicker} title={C.title} lede={C.lede} />
+      <Section layout="split" title={C.review.title} lede={C.review.note}>
+        <Rows label="Review findings" rows={findings} />
       </Section>
-      <Section
-        eyebrow="Open finding"
-        title="Late deposits can take part of a settlement gain."
-        lede="Claims are held at cost and the whole gain lands when settle runs. Capital that deposits just before and leaves right after takes a share of a gain that earlier LPs funded. The fix before real money is to accrue claim value linearly to the payout date inside totalAssets."
-      />
-      <Section eyebrow="Trust" title="What you are trusting today.">
-        <div className="card max-w-3xl p-6">
-          <DataRows
-            rows={[
-              ["Ops wallet", "owns every contract", "can list funds and set terms"],
-              ["Oracle forwarder", "ops wallet or CRE", "can write NAV and status"],
-              ["Keeper", "anyone", "must call settle at maturity"],
-              ["Stand-ins", "fund, issuer, status API", "real ones are permissioned"],
-            ]}
-          />
-        </div>
+      <Section tint layout="split" title={C.open.title}>
+        <p className="t-lede max-w-2xl text-ink-2">{C.open.body}</p>
       </Section>
-      <Section eyebrow="Report an issue" title="Found something? Tell us." lede="Open an issue in the repository. Never post private keys or seed phrases.">
-        <CTA href={`${REPO}/issues/new?title=Security%20report`}>Report an issue</CTA>
+      <Section layout="split" title={C.trust.title}>
+        <Rows label="Trust assumptions" rows={trust} />
+      </Section>
+      <Section tint title={C.report.title} lede={C.report.lede}>
+        <CTA href={`${REPO}/issues/new?title=Security%20report`}>{C.report.cta}</CTA>
       </Section>
     </>
   );
