@@ -1,5 +1,7 @@
 "use client";
 
+import { motion, useReducedMotion } from "motion/react";
+
 import { useState } from "react";
 import { fmtBps } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -9,6 +11,7 @@ import { TERM_COLORS, TERM_INK, TERM_NAMES, Tooltip, useWidth } from "./core";
 /// Each block's width is its share of the spread; a block too narrow for its
 /// label prints none (hover, focus and the accessible name still carry it).
 export function SpreadBar({ bps, legend = true, thin = false, className }: { bps: [number, number, number, number]; legend?: boolean; thin?: boolean; className?: string }) {
+  const reduce = useReducedMotion();
   const { ref, width } = useWidth<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
   const total = bps.reduce((a, b) => a + b, 0);
@@ -23,32 +26,36 @@ export function SpreadBar({ bps, legend = true, thin = false, className }: { bps
     x: widths.slice(0, k).reduce((a, w) => a + w + gap, 0),
     share: total ? Math.round((b / total) * 100) : 0,
   }));
-  const summary = `Spread ${fmtBps(total)}: ` + bps.map((b, i) => `${TERM_NAMES[i]} ${fmtBps(b)}`).join(", ");
+  const summary = `Discount ${fmtBps(total)}: ` + bps.map((b, i) => `${TERM_NAMES[i]} ${fmtBps(b)}`).join(", ");
 
   return (
     <div className={className}>
       <div ref={ref} role="img" aria-label={summary} className={cn("relative w-full", thin ? "h-1.5" : "h-7")}>
         {width > 0 &&
           blocks.map(({ i, b, x: left, w, share }) => (
-            <div
+            <motion.div
               key={i}
+              initial={reduce ? false : { scaleX: 0 }}
+              whileInView={{ scaleX: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.3, delay: reduce ? 0 : i * 0.12, ease: [0.22, 1, 0.36, 1] }}
               tabIndex={0}
-              aria-label={`${TERM_NAMES[i]}: ${fmtBps(b)}, ${share}% of the spread`}
+              aria-label={`${TERM_NAMES[i]}: ${fmtBps(b)}, ${share}% of the discount`}
               onPointerEnter={() => setHover(i)}
               onPointerLeave={() => setHover(null)}
               onFocus={() => setHover(i)}
               onBlur={() => setHover(null)}
-              className={cn("absolute top-0 flex items-center px-2 text-xs font-semibold outline-none transition-[filter] duration-150", thin ? "h-1.5 rounded-[2px]" : "h-7 rounded-[4px]", hover === i && "brightness-110")}
+              className={cn("absolute top-0 flex origin-left items-center px-2 text-xs font-medium outline-none transition-[filter] duration-150", thin ? "h-1.5 rounded-[2px]" : "h-7 rounded-[4px]", hover === i && "brightness-110")}
               style={{ left, width: w, background: TERM_COLORS[i], color: TERM_INK[i] }}
             >
               {!thin && w >= 44 && <span className="tnum">{share}%</span>}
-            </div>
+            </motion.div>
           ))}
         {hover !== null && width > 0 && (
           <Tooltip x={(blocks.find((k) => k.i === hover)?.x ?? 0) + (blocks.find((k) => k.i === hover)?.w ?? 0) / 2} y={0}>
             <div className="flex items-center gap-2">
               <span className="h-0.5 w-3 rounded-full" style={{ background: TERM_COLORS[hover] }} />
-              <span className="font-semibold text-ink tnum">{fmtBps(bps[hover])}</span>
+              <span className="font-medium text-ink tnum">{fmtBps(bps[hover])}</span>
               <span className="text-muted">{TERM_NAMES[hover]}</span>
             </div>
           </Tooltip>

@@ -1,36 +1,26 @@
 "use client";
 
-import { Check, ChevronRight } from "lucide-react";
+import { FundMark } from "./brand/FundMark";
 import { fmtBps, fmtDuration, fmtNav, fmtUsdc } from "@/lib/format";
 import { displayName, isScheduled } from "@/lib/glossary";
 import { indicativeBid } from "@/lib/pricing";
 import type { Fund } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Abbr } from "./ui/Abbr";
-import { Badge } from "./ui/primitives";
 
 type Market = { baseBps: number; utilBps: number } | undefined;
 
-function statusOf(f: Fund, now: number): { tone: "good" | "warn" | "bad"; label: string } | null {
-  if (f.impaired) return { tone: "bad", label: "Impaired" };
-  if (f.status === 1) return { tone: "bad", label: "Halted" };
-  if (now - f.navUpdatedAt > f.maxAge) return { tone: "warn", label: "Stale NAV" };
-  return null;
+function statusOf(f: Fund, now: number): { cls: string; label: string } {
+  if (f.impaired) return { cls: "text-halt", label: "Impaired" };
+  if (f.status === 1) return { cls: "text-halt", label: "Halted" };
+  if (now - f.navUpdatedAt > f.maxAge) return { cls: "text-refuse", label: "Stale NAV" };
+  return { cls: "text-buy", label: "Open" };
 }
 
-const ICON: Record<string, string> = { ACRED: "var(--color-accent)", ACREDd: "var(--color-brand-2)" };
+const COLS = "grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,0.8fr)] sm:grid-cols-[minmax(0,1.8fr)_repeat(3,minmax(0,0.8fr))_minmax(0,0.7fr)] items-center gap-3";
 
-function FundIcon({ f, muted }: { f: Fund; muted?: boolean }) {
-  return (
-    <span aria-hidden className="ios-icon" style={{ background: muted ? "var(--color-muted)" : (ICON[f.symbol] ?? "var(--color-accent)") }}>
-      {f.symbol.slice(0, 1)}
-    </span>
-  );
-}
-
-/// The funds as an iOS inset grouped list. Funds that redeem on a schedule are
-/// choices (radio rows); funds that already pay within a day follow as a dimmed
-/// comparison group that cannot be picked.
+/// Funds as a flat table. Funds that redeem on a schedule are choices (radio
+/// rows, the selected one marked with an ink bar); daily-liquidity funds are a
+/// dimmed comparison table that cannot be picked.
 export function FundsTable({
   funds,
   value,
@@ -44,79 +34,93 @@ export function FundsTable({
   onChange: (f: Fund) => void;
   now: number;
   market: Market;
-  /// "buyable" or "daily" renders one group, so a phone layout can put the sale form between them.
   show?: "all" | "buyable" | "daily";
 }) {
   const buyable = show === "daily" ? [] : funds.filter((f) => isScheduled(f.symbol));
   const daily = show === "buyable" ? [] : funds.filter((f) => !isScheduled(f.symbol));
+  const head = "t-label border-b border-ink pb-2";
   return (
-    <div>
+    <div className="grid gap-8">
       {buyable.length > 0 && (
-      <>
-      <div role="radiogroup" aria-label="Fund" className="ios-group [--inset:58px]">
-        {buyable.map((f) => {
-          const active = f.address === value;
-          const st = statusOf(f, now);
-          const bid = market ? indicativeBid(f, now, market) : null;
-          return (
-            <button
-              key={f.address}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              aria-label={`${f.symbol}, ${f.name}`}
-              onClick={() => onChange(f)}
-              className={cn("ios-row w-full text-left transition-colors hover:bg-surface-2", active && "bg-accent-soft/50")}
-            >
-              <FundIcon f={f} />
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-2">
-                  <span className="text-[17px] font-semibold">{f.symbol}</span>
-                  {st && (
-                    <Badge tone={st.tone}>
-                      <span className="badge-dot" />
-                      {st.label}
-                    </Badge>
+        <div>
+          <div className={cn(COLS, head)}>
+            <span>Fund</span>
+            <span className="hidden text-right sm:block">Fund price</span>
+            <span className="text-right">You get</span>
+            <span className="text-right">Pays in</span>
+            <span className="hidden text-right sm:block">Status</span>
+          </div>
+          <div role="radiogroup" aria-label="Fund">
+            {buyable.map((f) => {
+              const active = f.address === value;
+              const st = statusOf(f, now);
+              const bid = market ? indicativeBid(f, now, market) : null;
+              return (
+                <button
+                  key={f.address}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  aria-label={`${f.symbol}, ${f.name}`}
+                  onClick={() => onChange(f)}
+                  className={cn(
+                    COLS,
+                    "relative w-full border-b border-hairline py-3 text-left transition-colors hover:bg-surface-2",
+                    active && "bg-surface",
                   )}
-                </span>
-                <span className="block text-[14px] leading-snug text-ink-2">{displayName(f.name)}</span>
-                <span className="block text-[13px] text-muted">Pays in {fmtDuration(f.settlementDelay)}</span>
-              </span>
-              <span className="shrink-0 text-right">
-                <span className="num block text-[17px] font-semibold">{bid ? fmtUsdc(bid.perUnit).replace("$", "") : "…"}</span>
-                <span className="block text-[13px] text-muted">{bid ? `${fmtBps(bid.spreadBps)} spread` : ""}</span>
-              </span>
-              {active ? <Check size={20} strokeWidth={2.5} className="shrink-0 text-accent" aria-hidden /> : <ChevronRight size={18} className="shrink-0 text-faint" aria-hidden />}
-            </button>
-          );
-        })}
-      </div>
-      <p className="ios-footer">
-        Bid per unit from the vault, priced from each fund&apos;s Chainlink net asset value (<Abbr k="NAV" />).
-      </p>
-      </>
+                >
+                  {active && <span aria-hidden className="absolute inset-y-0 left-0 w-[3px] bg-ink" />}
+                  <span className="flex min-w-0 items-center gap-3 pl-3">
+                    <FundMark symbol={f.symbol} size={28} />
+                    <span className="min-w-0">
+                      <span className="block text-[15px] font-medium text-ink">{f.symbol}</span>
+                      <span className="block truncate text-[13px] text-muted">{displayName(f.name)}</span>
+                    </span>
+                  </span>
+                  <span className="num hidden text-right text-[14px] text-ink-2 sm:block">{fmtNav(f.nav)}</span>
+                  <span className="text-right">
+                    <span className="num block text-[14px] text-ink">{bid ? fmtUsdc(bid.perUnit) : "…"}</span>
+                    <span className="block text-[12px] text-muted">{bid ? `${fmtBps(bid.spreadBps)} discount` : ""}</span>
+                  </span>
+                  <span className="num text-right text-[14px] text-ink-2">{fmtDuration(f.settlementDelay)}</span>
+                  <span className={cn("hidden text-right font-mono text-[11px] uppercase tracking-[0.06em] sm:block", st.cls)}>{st.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="t-caption mt-2">Prices are per unit, from each fund&apos;s official price, updated live.</p>
+        </div>
       )}
 
       {daily.length > 0 && (
-        <>
-          <div className={cn("ios-header", buyable.length > 0 && "mt-6")}>Daily-liquidity funds, for comparison</div>
-          <ul className="ios-group [--inset:58px]">
+        <div className="opacity-80">
+          <div className="t-label mb-2">Daily-liquidity funds, for comparison</div>
+          <div className={cn(COLS, head)}>
+            <span>Fund</span>
+            <span className="hidden text-right sm:block">Fund price</span>
+            <span className="text-right">You get</span>
+            <span className="text-right">Pays in</span>
+            <span className="hidden sm:block" />
+          </div>
+          <ul>
             {daily.map((f) => (
-              <li key={f.address} className="ios-row">
-                <FundIcon f={f} muted />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[16px] font-semibold text-ink-2">{f.symbol}</span>
-                  <span className="block text-[14px] leading-snug text-ink-2">{displayName(f.name)}</span>
+              <li key={f.address} className={cn(COLS, "border-b border-hairline py-3")}>
+                <span className="flex min-w-0 items-center gap-3 pl-3">
+                  <FundMark symbol={f.symbol} size={24} className="opacity-70" />
+                  <span className="min-w-0">
+                    <span className="block text-[14px] text-ink-2">{f.symbol}</span>
+                    <span className="block truncate text-[12px] text-muted">{displayName(f.name)}</span>
+                  </span>
                 </span>
-                <span className="shrink-0 text-right">
-                  <span className="num block text-[16px] text-ink-2">{fmtNav(f.nav).replace("$", "")}</span>
-                  <span className="block text-[13px] text-muted">Redeem directly</span>
-                </span>
+                <span className="num hidden text-right text-[14px] text-ink-2 sm:block">{fmtNav(f.nav)}</span>
+                <span className="text-right text-[12px] text-muted">Redeem directly</span>
+                <span className="num text-right text-[14px] text-muted">{fmtDuration(f.settlementDelay)}</span>
+                <span className="hidden sm:block" />
               </li>
             ))}
           </ul>
-          <p className="ios-footer">They already pay within a day, so there is nothing to sell early. Shown with their live Chainlink prices.</p>
-        </>
+          <p className="t-caption mt-2">{`These already pay within a day, so there is nothing to sell early. Shown with their live Chainlink prices.`}</p>
+        </div>
       )}
     </div>
   );

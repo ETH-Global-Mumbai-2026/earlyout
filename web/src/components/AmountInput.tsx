@@ -3,6 +3,8 @@
 import { useId } from "react";
 import { fmtUnits } from "@/lib/format";
 
+/// An amount field like the figure box on a term sheet: the number large in
+/// the display serif, the unit and the holding in mono beside it.
 export function AmountInput({
   value,
   onChange,
@@ -19,41 +21,39 @@ export function AmountInput({
   label?: string;
 }) {
   const id = useId();
-  // An iOS form row: the label on the left, the figure typed on the right. It
-  // sits inside an .ios-group, with the Max shortcut under the figure.
   return (
-    <div className="ios-row min-h-[60px]">
-      <label htmlFor={id} className="shrink-0 text-[17px]">
-        {label}
-      </label>
-      <div className="min-w-0 flex-1 text-right">
-        <div className="flex items-baseline justify-end gap-1.5">
-          <input
-            id={id}
-            type="text"
-            inputMode="decimal"
-            autoComplete="off"
-            spellCheck={false}
-            placeholder="0"
-            value={value}
-            onChange={(e) => onChange(e.target.value.replace(/[^\d.]/g, ""))}
-            className="tnum min-w-0 flex-1 bg-transparent text-right text-[22px] font-semibold outline-none placeholder:text-faint"
-            aria-label={`${label} in ${unit}`}
-          />
-          <span className="text-[17px] text-muted" aria-hidden>
-            {unit}
-          </span>
-        </div>
+    <div className="control px-3.5 pb-2.5 pt-2">
+      <div className="flex items-center justify-between gap-3">
+        <label htmlFor={id} className="t-label">
+          {label}
+        </label>
         {balance !== undefined && (
           <button
             type="button"
-            className="pressable text-[13px] text-accent"
+            className="pressable t-label !text-brand hover:underline"
             onClick={() => onChange(formatFull(balance, decimals))}
             aria-label={`Use maximum, ${fmtUnits(balance, decimals)} ${unit}`}
           >
             Max {fmtUnits(balance, decimals)}
           </button>
         )}
+      </div>
+      <div className="mt-1 flex items-baseline gap-2">
+        <input
+          id={id}
+          type="text"
+          inputMode="decimal"
+          autoComplete="off"
+          spellCheck={false}
+          placeholder="0"
+          value={value}
+          onChange={(e) => onChange(e.target.value.replace(/[^\d.]/g, ""))}
+          className="t-figure min-w-0 flex-1 bg-transparent text-[32px] leading-[1.1] outline-none placeholder:text-faint"
+          aria-label={`${label} in ${unit}`}
+        />
+        <span className="font-mono text-[12px] text-muted" aria-hidden>
+          {unit}
+        </span>
       </div>
     </div>
   );

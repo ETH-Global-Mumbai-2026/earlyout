@@ -1,5 +1,7 @@
 "use client";
 
+import { motion, useReducedMotion } from "motion/react";
+
 import { useMemo, useState } from "react";
 import { TableToggle, Tooltip, useWidth } from "./core";
 
@@ -26,6 +28,7 @@ export function SpreadCurve({
   height?: number;
   className?: string;
 }) {
+  const reduce = useReducedMotion();
   const { ref, width } = useWidth<HTMLDivElement>();
   const [hoverDay, setHoverDay] = useState<number | null>(null);
   const spread = (d: number) => (baseBps + utilBps + creditBps + volBps * Math.sqrt(Math.max(0, d) / 365)) / 100;
@@ -68,18 +71,18 @@ export function SpreadCurve({
             {yTicks.map((t) => (
               <g key={t}>
                 <line x1={pad.l} x2={pad.l + w} y1={sy(t)} y2={sy(t)} stroke="var(--color-hairline)" />
-                <text x={pad.l - 8} y={sy(t)} dy="0.32em" textAnchor="end" className="fill-muted text-[11px] tnum">
+                <text x={pad.l - 8} y={sy(t)} dy="0.32em" textAnchor="end" className="fill-muted font-mono text-[10px] tnum">
                   {t}%
                 </text>
               </g>
             ))}
             {xTicks.map((d) => (
-              <text key={d} x={sx(d)} y={height - 6} textAnchor="middle" className="fill-muted text-[11px] tnum">
+              <text key={d} x={sx(d)} y={height - 6} textAnchor="middle" className="fill-muted font-mono text-[10px] tnum">
                 {d === 0 ? "now" : `${d}d`}
               </text>
             ))}
             <path d={path.area} fill="var(--color-viz-1)" opacity={0.1} />
-            <path d={path.line} fill="none" stroke="var(--color-viz-1)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+            <motion.path d={path.line} fill="none" stroke="var(--color-viz-1)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" initial={reduce ? false : { pathLength: 0 }} whileInView={{ pathLength: 1 }} viewport={{ once: true }} transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }} />
             {marks.map((m) => {
               const cx = sx(m.days);
               const cy = sy(spread(m.days));
@@ -87,7 +90,7 @@ export function SpreadCurve({
               return (
                 <g key={m.label}>
                   <circle cx={cx} cy={cy} r={5} fill="var(--color-viz-1)" stroke="var(--color-surface)" strokeWidth={2} />
-                  <text x={cx + (right ? -8 : 8)} y={cy + 18} textAnchor={right ? "end" : "start"} className="fill-ink text-[11px] font-semibold tnum">
+                  <text x={cx + (right ? -8 : 8)} y={cy + 18} textAnchor={right ? "end" : "start"} className="fill-ink text-[11px] font-medium tnum">
                     {m.label} · {spread(m.days).toFixed(2)}%
                   </text>
                 </g>
@@ -115,7 +118,7 @@ export function SpreadCurve({
           <Tooltip x={sx(hoverDay)} y={sy(spread(hoverDay))} align={sx(hoverDay) > width * 0.75 ? "right" : sx(hoverDay) < width * 0.25 ? "left" : "center"}>
             <div className="flex items-center gap-2">
               <span className="h-0.5 w-3 rounded-full bg-viz-1" />
-              <span className="font-semibold text-ink tnum">{spread(hoverDay).toFixed(2)}%</span>
+              <span className="font-medium text-ink tnum">{spread(hoverDay).toFixed(2)}%</span>
               <span className="text-muted">{hoverDay === 0 ? "due now" : `${hoverDay} days to payout`}</span>
             </div>
           </Tooltip>

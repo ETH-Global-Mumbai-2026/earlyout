@@ -7,10 +7,10 @@ export function Meter({ value, max, label, valueText, className }: { value: numb
   return (
     <div className={`flex items-center gap-4 ${className ?? ""}`} role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={max} aria-valuenow={Math.min(value, max)} aria-valuetext={valueText}>
       <Ring value={value} max={max} size={60} stroke={7} color={toneColor(ratio)} label={`${label}: ${valueText}`}>
-        <span className="num text-[13px] font-semibold">{Math.round(ratio * 100)}%</span>
+        <span className="num text-[13px] font-medium">{Math.round(ratio * 100)}%</span>
       </Ring>
       <div className="min-w-0">
-        <div className="text-[15px] font-semibold tnum">{valueText}</div>
+        <div className="text-[15px] font-medium tnum">{valueText}</div>
         <div className="t-caption">{label}</div>
       </div>
     </div>
