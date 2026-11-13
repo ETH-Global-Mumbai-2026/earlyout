@@ -3,37 +3,85 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Reveal } from "../motion/Reveal";
+import { GlassBackdrop } from "../art/GlassBackdrop";
+import { GLASS_BG } from "../art/glass";
+import { buttonClass } from "../ui/buttonClass";
 
 export function Container({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("mx-auto w-full max-w-6xl px-5 sm:px-8", className)}>{children}</div>;
+  return <div className={cn("mx-auto w-full max-w-6xl px-4 sm:px-6", className)}>{children}</div>;
 }
 
-/// Sections alternate white and Apple's light grey; headings reveal on scroll.
-export function Section({ id, eyebrow, title, lede, children, className, tint, center }: { id?: string; eyebrow?: string; title?: ReactNode; lede?: ReactNode; children?: ReactNode; className?: string; tint?: boolean; center?: boolean }) {
+type Layout = "split" | "stack" | "bleed";
+
+/// A page section. `split` puts the heading in a left column beside the
+/// content; `stack` puts it above; `bleed` lets the content run the full
+/// container width under a hairline. `eyebrow` and `center` remain for pages
+/// not yet rebuilt.
+export function Section({
+  id,
+  kicker,
+  eyebrow,
+  title,
+  lede,
+  layout = "stack",
+  children,
+  className,
+  tint,
+  center,
+}: {
+  id?: string;
+  kicker?: string;
+  eyebrow?: string;
+  title?: ReactNode;
+  lede?: ReactNode;
+  layout?: Layout;
+  children?: ReactNode;
+  className?: string;
+  tint?: boolean;
+  center?: boolean;
+}) {
+  const k = kicker ?? eyebrow;
+  const head = (k || title || lede) && (
+    <Reveal className={cn(center && "mx-auto max-w-3xl text-center", layout === "split" && "lg:sticky lg:top-24")}>
+      {k && <div className="t-label">{k}</div>}
+      {title && <h2 className={cn("t-page mt-3", !center && "max-w-3xl")}>{title}</h2>}
+      {lede && <p className={cn("t-lede mt-4 text-ink-2", center ? "mx-auto max-w-2xl" : "max-w-2xl")}>{lede}</p>}
+    </Reveal>
+  );
   return (
-    <section id={id} className={cn("py-14 sm:py-20", tint && "border-y border-hairline bg-surface-2", className)}>
+    <section id={id} data-layout={layout} className={cn("py-16 sm:py-24", tint && "border-y border-hairline bg-surface-2", layout === "bleed" && "border-t border-hairline", className)}>
       <Container>
-        <Reveal className={cn(center && "mx-auto max-w-3xl text-center")}>
-          {eyebrow && <div className="text-[15px] font-semibold text-accent">{eyebrow}</div>}
-          {title && <h2 className={cn("t-display mt-2", !center && "max-w-3xl")}>{title}</h2>}
-          {lede && <p className={cn("t-lede mt-4", center ? "mx-auto max-w-2xl" : "max-w-2xl")}>{lede}</p>}
-        </Reveal>
-        {children && <div className={cn(title || lede ? "mt-10" : "")}>{children}</div>}
+        {layout === "split" ? (
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16">
+            <div>{head}</div>
+            <div className="min-w-0">{children}</div>
+          </div>
+        ) : (
+          <>
+            {head}
+            {children && <div className={cn(head ? "mt-10" : "")}>{children}</div>}
+          </>
+        )}
       </Container>
     </section>
   );
 }
 
-export function PageHeader({ eyebrow, title, lede }: { eyebrow: string; title: ReactNode; lede?: ReactNode }) {
+export function PageHeader({ eyebrow, title, lede, glass }: { eyebrow: string; title: ReactNode; lede?: ReactNode; glass?: boolean }) {
+  const body = (
+    <Container className={cn("relative pb-10 pt-14 sm:pb-14 sm:pt-20", glass && "py-20 sm:py-28")}>
+      <Reveal y={10}>
+        <div className={cn("t-label", glass && "!text-ink-2")}>{eyebrow}</div>
+        <h1 className="t-hero mt-4 max-w-4xl">{title}</h1>
+        {lede && <p className={cn("t-lede mt-6 max-w-2xl text-ink-2", glass && "!text-ink")}>{lede}</p>}
+      </Reveal>
+    </Container>
+  );
+  if (!glass) return body;
   return (
-    <div className="-mt-[70px] pt-[70px]">
-      <Container className="pb-14 pt-16 text-center sm:pb-16 sm:pt-20">
-        <Reveal y={10}>
-          <div className="text-[15px] font-semibold text-accent">{eyebrow}</div>
-          <h1 className="t-page mx-auto mt-3 max-w-3xl">{title}</h1>
-          {lede && <p className="t-lede mx-auto mt-5 max-w-2xl text-[19px]">{lede}</p>}
-        </Reveal>
-      </Container>
+    <div className={cn("relative overflow-hidden", GLASS_BG)}>
+      <GlassBackdrop />
+      {body}
     </div>
   );
 }
@@ -70,9 +118,9 @@ export function Grid({ children, cols = 3 }: { children: ReactNode; cols?: 2 | 3
 
 export function Tile({ index, title, children }: { index?: string; title: ReactNode; children: ReactNode }) {
   return (
-    <div className="card h-full p-6">
-      {index && <div className="ios-icon bg-accent text-[14px]">{index.replace(/^0/, "")}</div>}
-      <h3 className={cn("text-[17px] font-semibold tracking-[-0.01em] text-ink", index && "mt-4")}>{title}</h3>
+    <div className="h-full border-t border-ink pt-4">
+      {index && <div className="t-label">{index}</div>}
+      <h3 className={cn("text-[17px] font-medium tracking-[-0.01em] text-ink", index && "mt-2")}>{title}</h3>
       <div className="mt-1.5 text-[15px] leading-relaxed text-ink-2">{children}</div>
     </div>
   );
@@ -80,11 +128,14 @@ export function Tile({ index, title, children }: { index?: string; title: ReactN
 
 export function CTA({ href, children, variant = "primary" }: { href: string; children: ReactNode; variant?: "primary" | "secondary" }) {
   const external = href.startsWith("http");
-  const cls = cn(
-    "pressable inline-flex h-[50px] items-center justify-center gap-1.5 rounded-[14px] px-7 text-[17px] font-semibold",
-    variant === "primary" ? "bg-accent text-accent-ink hover:opacity-90" : "bg-accent-soft text-accent hover:brightness-[0.97]",
-  );
+  const cls = buttonClass(variant, "lg");
   const icon = external ? <ArrowUpRight size={16} /> : null;
+  if (!external && !href.startsWith("/"))
+    return (
+      <a href={href} className={cls}>
+        {children}
+      </a>
+    );
   return external ? (
     <a href={href} target="_blank" rel="noreferrer" className={cls}>
       {children} {icon}
@@ -98,7 +149,7 @@ export function CTA({ href, children, variant = "primary" }: { href: string; chi
 
 export function Code({ children }: { children: string }) {
   return (
-    <pre className="frost overflow-x-auto rounded-2xl p-5 font-mono text-[13px] leading-relaxed text-ink-2">
+    <pre className="overflow-x-auto rounded-[4px] border border-hairline bg-sunk p-5 font-mono text-[13px] leading-relaxed text-ink-2">
       <code>{children}</code>
     </pre>
   );
