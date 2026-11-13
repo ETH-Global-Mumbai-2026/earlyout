@@ -1,29 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { themeScript } from "@/components/ThemeToggle";
 import { Providers } from "@/components/Providers";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 
-const averta = localFont({
-  src: [
-    { path: "./fonts/averta-light.woff2", weight: "300", style: "normal" },
-    { path: "./fonts/averta-regular.woff2", weight: "400", style: "normal" },
-    { path: "./fonts/averta-semibold.woff2", weight: "500", style: "normal" },
-    { path: "./fonts/averta-semibold.woff2", weight: "600", style: "normal" },
-    { path: "./fonts/averta-bold.woff2", weight: "700", style: "normal" },
-  ],
-  variable: "--font-averta",
-  display: "swap",
-  // Averta's own metrics leave more room above the letters than below, so
-  // centred labels sat low. Same total line height, capitals centred.
-  declarations: [
-    { prop: "ascent-override", value: "100.4%" },
-    { prop: "descent-override", value: "29.4%" },
-    { prop: "line-gap-override", value: "0%" },
-  ],
-  fallback: ["-apple-system", "BlinkMacSystemFont", "Helvetica Neue", "Segoe UI", "Roboto", "Arial", "sans-serif"],
-});
+// Display: Instrument Serif. Text: Geist. Figures and labels: Geist Mono.
+const serif = Instrument_Serif({ weight: "400", style: ["normal", "italic"], subsets: ["latin"], variable: "--font-instrument-serif", display: "swap" });
+const sans = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
+const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -50,8 +35,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f5f5f5" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+    { media: "(prefers-color-scheme: light)", color: "#eef7fd" },
+    { media: "(prefers-color-scheme: dark)", color: "#08121c" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -60,7 +45,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={averta.variable} suppressHydrationWarning>
+    <html lang="en" className={`${serif.variable} ${sans.variable} ${mono.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

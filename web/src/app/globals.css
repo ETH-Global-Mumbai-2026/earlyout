@@ -4,102 +4,89 @@
    override the system setting. */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* One light theme across the site and the app: Apple's type, surfaces and motion,
-   held to an enterprise density. */
-
+/* Ledger green: warm paper, ink, one forest green. It should read like a fund
+   document, not a crypto app. Green means the accent and BUY; primary buttons
+   are ink so an action is never mistaken for a verdict. */
 
 @theme {
-  /* Averta everywhere, with the system UI font as the fallback while it loads. */
-  --font-sans: var(--font-averta), -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  --font-serif: var(--font-instrument-serif), "Iowan Old Style", "Times New Roman", serif;
+  --font-sans: var(--font-geist), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
-  /* Earlyout palette, light: black and white. Neutral greys with no tint, ink as
-     the one action colour; green, amber and red mean BUY, REFUSE, HALT only. */
-  --color-canvas: #f5f5f5;
-  --color-surface: #ffffff;
-  --color-surface-2: #fafafa;
-  --color-sunk: #ececec;
-  --color-ink: #0a0a0a;
-  --color-ink-2: #333333;
-  --color-muted: #666666;
-  --color-faint: #a3a3a3;
-  --color-hairline: #e5e5e5;
-  --color-line-strong: #d4d4d4;
-  --color-brand: #0a0a0a;
-  --color-brand-2: #525252;
-  --color-accent: #0a0a0a;
-  --color-accent-ink: #ffffff;
-  --color-accent-soft: #f0f0f0;
-  --color-buy: #1f7a4d;
-  --color-refuse: #a15c00;
-  --color-halt: #b42318;
-  --color-buy-soft: #e9f5ee;
-  --color-refuse-soft: #fbf2e4;
-  --color-halt-soft: #fbecea;
-  --color-dot-buy: #1f9d5c;
-  --color-chainlink: #375bd2;
+  --color-canvas: #eef7fd;
+  --color-surface: #fbfdff;
+  --color-surface-2: #e3f1fb;
+  --color-sunk: #d9ecf9;
+  --color-ink: #0b1b2b;
+  --color-ink-2: #2a4459;
+  --color-muted: #557089;
+  --color-faint: #8ea8bd;
+  --color-hairline: #cfe3f2;
+  --color-line-strong: #b8d4ea;
+  --color-brand: #0b6fc0;
+  --color-brand-2: #3d6f96;
+  --color-neg: #8b3a1e;
+  /* Legacy names kept while screens migrate: accent is ink, the action colour. */
+  --color-accent: #0b1b2b;
+  --color-accent-ink: #eef7fd;
+  --color-accent-soft: #d9ecf9;
 
-  /* Spread terms: a validated categorical palette, fixed order
-     (1 base, 2 vault usage, 3 time to payout, 4 issuer credit).
-     Credit is violet, never red: it is a premium the vault earns. */
-  --color-viz-1: #4c7ef3;
-  --color-viz-2: #a96500;
-  --color-viz-3: #0e9aa7;
-  --color-viz-4: #8e44c9;
-  --color-viz-track: #e9e9ee;
+  --color-buy: #2f6b3f;
+  --color-refuse: #9a6a14;
+  --color-halt: #9b2c1f;
+  --color-buy-soft: #e5eee2;
+  --color-refuse-soft: #f4ead3;
+  --color-halt-soft: #f4e1dc;
+  --color-dot-buy: #2f6b3f;
 
-  --ease-out: cubic-bezier(0.32, 0.72, 0, 1); /* iOS sheet curve */
-  --radius-card: 14px;
-  --radius-control: 10px;
-  --radius-sheet: 22px;
-  /* Hairline first, shadow second. */
-  --shadow-card: 0 0 0 0.5px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-float: 0 0 0 0.5px rgba(0, 0, 0, 0.05), 0 12px 40px -12px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.04);
+  /* Spread terms, fixed order: 1 base, 2 vault usage, 3 time to payout,
+     4 issuer credit. Credit is plum, never red: it is a premium the vault earns. */
+  --color-viz-1: #3aa3e6;
+  --color-viz-2: #f2b544;
+  --color-viz-3: #f07a4a;
+  --color-viz-4: #8b6fd6;
+  --color-viz-track: #dcebf6;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --radius-card: 4px;
+  --radius-control: 6px;
+  --radius-sheet: 8px;
+  --shadow-card: 0 0 0 1px var(--color-hairline);
+  --shadow-float: 0 0 0 1px var(--color-hairline), 0 30px 60px -30px rgba(40, 30, 10, 0.35);
 }
 
-/* Dark: a counterpart chosen on its own surface, not an inversion. A deep,
-   slightly cool grey rather than pure black, so white text does not vibrate and
-   grouped cells still read as raised. iOS system colours use their dark variants. */
 .dark {
   color-scheme: dark;
-  --color-canvas: #0a0a0a;
-  --color-surface: #161616;
-  --color-surface-2: #1c1c1c;
-  --color-sunk: #262626;
-  --color-ink: #fafafa;
-  --color-ink-2: #d4d4d4;
-  --color-muted: #a3a3a3;
-  --color-faint: #6b6b6b;
-  --color-hairline: #262626;
-  --color-line-strong: #3a3a3a;
-  --color-brand: #fafafa;
-  --color-brand-2: #a3a3a3;
-  --color-accent: #fafafa;
-  --color-accent-ink: #0a0a0a;
-  --color-accent-soft: #262626;
-  --color-buy: #4acb8a;
-  --color-refuse: #e3a443;
-  --color-halt: #f2675b;
-  --color-buy-soft: #12261b;
-  --color-refuse-soft: #2a2010;
-  --color-halt-soft: #2c1513;
-  --color-dot-buy: #3dbe7e;
-  --color-chainlink: #6f8cf0;
-  --color-viz-1: #5a87f0;
-  --color-viz-2: #bd8620;
-  --color-viz-3: #17a3ab;
-  --color-viz-4: #9e63d2;
-  --color-viz-track: oklch(0.3 0.01 264);
-  /* Shadows do not read on dark surfaces: an inset hairline instead. */
-  --shadow-card: inset 0 0 0 0.5px rgba(255, 255, 255, 0.07);
-  --shadow-float: inset 0 0 0 0.5px rgba(255, 255, 255, 0.09), 0 16px 40px rgba(0, 0, 0, 0.45);
-}
-
-/* App: same theme, denser type. */
-.theme-app {
-  background: transparent;
-  color: var(--color-ink);
-  min-height: 100dvh;
+  --color-canvas: #08121c;
+  --color-surface: #0e1b28;
+  --color-surface-2: #122233;
+  --color-sunk: #17293c;
+  --color-ink: #eaf5fd;
+  --color-ink-2: #c0d7ea;
+  --color-muted: #85a2ba;
+  --color-faint: #587288;
+  --color-hairline: #1b2d40;
+  --color-line-strong: #26405a;
+  --color-brand: #5cc0ff;
+  --color-brand-2: #93b6d3;
+  --color-neg: #e08a68;
+  --color-accent: #eaf5fd;
+  --color-accent-ink: #08121c;
+  --color-accent-soft: #17293c;
+  --color-buy: #86c294;
+  --color-refuse: #e0b45a;
+  --color-halt: #ec7b69;
+  --color-buy-soft: #1c2a1f;
+  --color-refuse-soft: #2c2414;
+  --color-halt-soft: #2f1814;
+  --color-dot-buy: #86c294;
+  --color-viz-1: #5cbcf5;
+  --color-viz-2: #f7c766;
+  --color-viz-3: #f69570;
+  --color-viz-4: #a88ff0;
+  --color-viz-track: #17293c;
+  --shadow-card: 0 0 0 1px var(--color-hairline);
+  --shadow-float: 0 0 0 1px var(--color-line-strong), 0 24px 48px -24px rgba(0, 0, 0, 0.6);
 }
 
 html {
@@ -118,189 +105,103 @@ body {
 }
 
 ::selection {
-  background: var(--color-accent);
-  color: var(--color-accent-ink);
+  background: var(--color-ink);
+  color: var(--color-canvas);
 }
 
-/* Type: Apple's named scale. Weight and size carry hierarchy; sentence case. */
+/* ---------- Type ---------- */
+
 .t-hero {
-  font-size: clamp(2.5rem, 5.2vw, 4rem);
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-  font-weight: 700;
-  color: var(--color-ink);
-}
-/* Large Title */
-.t-page {
-  font-size: clamp(2rem, 3.6vw, 2.5rem);
-  line-height: 1.12;
-  letter-spacing: -0.022em;
-  font-weight: 700;
-  color: var(--color-ink);
-}
-/* Title 1 */
-.t-display {
-  font-size: clamp(1.625rem, 2.8vw, 2.125rem);
-  line-height: 1.15;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(2.75rem, min(6.4vw, 11svh), 5rem);
+  line-height: 0.98;
   letter-spacing: -0.02em;
-  font-weight: 700;
   color: var(--color-ink);
 }
-.theme-app .t-display {
-  font-size: 2.125rem; /* Large Title in the app */
-  line-height: 2.5625rem;
+.t-page {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(2.125rem, 4.2vw, 3.25rem);
+  line-height: 1.02;
+  letter-spacing: -0.018em;
+  color: var(--color-ink);
 }
-/* Title 2 */
 .t-title {
-  font-size: 1.375rem;
-  line-height: 1.75rem;
-  letter-spacing: -0.017em;
-  font-weight: 700;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 1.625rem;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
 }
-/* Headline */
 .t-headline {
-  font-size: 1.0625rem;
+  font-size: 1rem;
   line-height: 1.375rem;
-  letter-spacing: -0.011em;
+  letter-spacing: -0.006em;
   font-weight: 600;
-}
-.t-body {
-  font-size: 0.9375rem;
-  line-height: 1.375rem;
 }
 .t-lede {
   font-size: 1.0625rem;
-  line-height: 1.55;
+  line-height: 1.6;
   color: var(--color-muted);
 }
-/* Footnote */
 .t-caption {
   font-size: 0.8125rem;
-  line-height: 1.125rem;
+  line-height: 1.2rem;
   color: var(--color-muted);
 }
-.t-eyebrow {
-  font-size: 0.8125rem;
+/* Mono label: table heads, kickers, sheet headers. */
+.t-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
   font-weight: 500;
-  line-height: 1.125rem;
+  line-height: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--color-muted);
 }
-
+/* Large money figure. */
+.t-figure {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums lining-nums;
+}
 .t-mono {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
-.tnum {
-  font-variant-numeric: tabular-nums;
-}
+.tnum,
 .num {
   font-variant-numeric: tabular-nums;
 }
 
-.material {
-  background: color-mix(in srgb, var(--color-canvas) 78%, transparent);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
-}
-/* Liquid glass: a floating, translucent capsule with a lit top edge. */
-.glass {
-  background: color-mix(in srgb, var(--color-surface) 66%, transparent);
-  -webkit-backdrop-filter: blur(24px) saturate(190%);
-  backdrop-filter: blur(24px) saturate(190%);
-  box-shadow:
-    inset 0 0.5px 0 rgba(255, 255, 255, 0.7),
-    0 0 0 0.5px rgba(0, 0, 0, 0.06),
-    0 8px 28px -8px rgba(0, 0, 0, 0.16);
-}
-.dark .glass {
-  box-shadow:
-    inset 0 0.5px 0 rgba(255, 255, 255, 0.12),
-    0 0 0 0.5px rgba(255, 255, 255, 0.08),
-    0 10px 30px -8px rgba(0, 0, 0, 0.6);
-}
+/* ---------- Surfaces ---------- */
 
-@media (prefers-reduced-transparency: reduce) {
-  .glass {
-    background: var(--color-surface);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-  .material {
-    background: var(--color-canvas);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-}
-
-/* Solid surfaces separated by a hairline and a whisper of shadow. */
-.card,
-.frost {
+/* A term sheet: paper on paper, one hairline, a soft warm shadow when raised. */
+.sheet {
   background: var(--color-surface);
+  border: 1px solid var(--color-hairline);
   border-radius: var(--radius-card);
-  box-shadow:
-    0 0 0 1px var(--color-hairline),
-    0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.sheet-raised {
+  box-shadow: var(--shadow-float);
+}
+.rule-dashed {
+  border-bottom: 1px dashed var(--color-hairline);
+}
+/* Ruled paper behind a featured sheet. */
+.ruled {
+  background-image: repeating-linear-gradient(0deg, transparent 0 27px, color-mix(in srgb, var(--color-hairline) 55%, transparent) 27px 28px);
 }
 
-@layer components {
-/* iOS inset grouped list: a rounded group of rows with inset separators,
-   a small header above and an optional footnote below. */
-.ios-group {
-  background: var(--color-surface);
-  border-radius: var(--radius-card);
-  box-shadow:
-    0 0 0 1px var(--color-hairline),
-    0 1px 2px rgba(0, 0, 0, 0.04);
-  overflow: hidden;
-}
-.ios-header {
-  padding: 0 16px 7px;
-  font-size: 0.8125rem;
-  line-height: 1.125rem;
-  font-weight: 600;
-  color: var(--color-muted);
-}
-.ios-footer {
-  padding: 7px 16px 0;
-  font-size: 0.8125rem;
-  line-height: 1.125rem;
-  color: var(--color-muted);
-}
-.ios-row {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 48px;
-  padding: 10px 16px;
-}
-.ios-row + .ios-row::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: var(--inset, 16px);
-  border-top: 1px solid var(--color-hairline);
-}
-.ios-icon {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  border-radius: 8px;
-  color: var(--color-surface);
-  font-size: 13px;
-  font-weight: 700;
-}
-}
+/* ---------- Controls ---------- */
 
-/* Press feedback: quick and quiet. */
 .pressable {
-  transition: transform 100ms var(--ease-out), background-color 120ms ease, color 120ms ease, border-color 120ms ease, opacity 120ms ease;
+  transition: transform 100ms var(--ease-out), background-color 140ms ease, color 140ms ease, border-color 140ms ease, opacity 140ms ease;
 }
 .pressable:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: scale(0.985);
 }
 @media (hover: hover) and (pointer: fine) {
   .link-underline:hover {
@@ -316,12 +217,12 @@ body {
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 .control:focus-within {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 20%, transparent);
+  border-color: var(--color-ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ink) 12%, transparent);
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-brand);
   outline-offset: 2px;
 }
 
@@ -343,7 +244,6 @@ input::-webkit-inner-spin-button {
   border-top: 1px solid var(--color-hairline);
 }
 
-/* Label / value / note rows. */
 .data-row {
   display: grid;
   grid-template-columns: minmax(5.5rem, 10rem) 1fr auto;
@@ -364,19 +264,23 @@ input::-webkit-inner-spin-button {
   }
 }
 
-/* Tables: the workhorse of both themes. */
+/* ---------- Tables: flat, mono heads, hairline rows ---------- */
+
 .tbl {
   width: 100%;
   border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
 }
 .tbl th {
-  font-size: 0.8125rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
   font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--color-muted);
   text-align: left;
   padding: 0.625rem 1rem;
   border-bottom: 1px solid var(--color-hairline);
-  background: var(--color-surface);
   white-space: nowrap;
 }
 .tbl td {
@@ -390,23 +294,17 @@ input::-webkit-inner-spin-button {
 .tbl .r {
   text-align: right;
 }
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 22px;
-  padding: 0 9px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  white-space: nowrap;
+.tbl tr.sel td {
+  background: color-mix(in srgb, var(--color-sunk) 70%, transparent);
 }
-.badge-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 9999px;
-  background: currentColor;
+.tbl tr.sel td:first-child {
+  box-shadow: inset 2px 0 0 var(--color-ink);
+}
+
+/* Legacy wrapper marker for the app (tests look for it). */
+.theme-app {
+  color: var(--color-ink);
+  min-height: 100dvh;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -415,3 +313,7 @@ input::-webkit-inner-spin-button {
     transition-duration: 1ms;
   }
 }
+
+/* What the hero glass sits on before WebGL paints. */
+:root { --color-glass-bg: #86c8f4; }
+.dark { --color-glass-bg: #071a2c; }
