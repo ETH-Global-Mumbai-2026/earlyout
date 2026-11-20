@@ -102,6 +102,7 @@ export const mockSource: Source = {
     else if (now - f.navUpdatedAt > f.maxAge) [verdict, reason] = ["HALT", "NAV is stale"];
     else if (f.impaired) [verdict, reason] = ["HALT", "Fund is impaired"];
     else if (amount === 0n) [verdict, reason] = ["REFUSE", "Amount is zero"];
+    else if (payout === 0n && spread < BPS) [verdict, reason] = ["REFUSE", "Amount too small"];
     else if (f.deployedUsdc + payout > f.capUsdc) [verdict, reason] = ["REFUSE", "Over the fund cap"];
     else if (state.idle < payout) [verdict, reason] = ["REFUSE", "Vault short of USDC"];
     return {

@@ -232,10 +232,10 @@ export const COPY = {
     kicker: "Security",
     title: "Reviewed, tested, and plain about what is left.",
     lede: "The contracts went through Arc Studio's security review and Slither before deployment. This is testnet software and it has not been audited.",
-    review: { title: "Five medium findings fixed. One high finding open by decision.", note: "63 Foundry tests pass. The full report is in docs/studio in the repository." },
+    review: { title: "All six findings fixed: five medium and one high.", note: "81 Foundry tests pass. The full report is in docs/studio in the repository." },
     open: {
-      title: "Late deposits can take part of a settlement gain.",
-      body: "Claims are held at cost and the gain lands when settle runs. Money deposited just before and withdrawn just after takes a share of a gain earlier LPs funded. Before real money, claim value will accrue to the payout date inside total assets.",
+      title: "Settlement gains go to the LPs who funded them.",
+      body: "Each claim the vault holds gains value a little every day, from the day it is bought to its payout date. Money deposited just before a settlement and withdrawn just after gets no share of that gain. The only change left at settlement is any move in NAV since the vault bought the claim.",
     },
     trust: { title: "What you are trusting today." },
     report: { title: "Found something? Tell us.", lede: "Open an issue in the repository. Never post private keys or seed phrases.", cta: "Report an issue" },

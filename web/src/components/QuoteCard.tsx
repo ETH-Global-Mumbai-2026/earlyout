@@ -14,6 +14,7 @@ import { useNow } from "@/hooks/useNow";
 /// What the seller can do instead, in plain words, when the pool will not buy.
 export function blockedHint(q: Quote, symbol: string): string {
   if (q.reason === "Over the fund cap") return `The pool can take ${fmtUsdc(q.capacityLeft)} more of ${symbol} right now. Try a smaller amount.`;
+  if (q.reason === "Amount too small") return "This amount is too small to pay out anything. Try a larger amount.";
   if (q.reason === "Vault short of USDC") return "The pool doesn't have enough spare cash for this sale right now. Try a smaller amount.";
   if (q.verdict === "HALT") return COPY.verdicts.HALT;
   return COPY.verdicts.REFUSE;
