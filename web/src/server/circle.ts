@@ -119,7 +119,8 @@ export type CircleTx = { id: string; state: string; txHash?: string; errorReason
 /// The wallet's outbound transaction carrying our `refId`, once Circle has created it.
 export async function transactionByRef(userToken: string, walletId: string, refId: string): Promise<CircleTx | undefined> {
   const { transactions } = await call<{ transactions: CircleTx[] }>(
-    `/transactions?walletIds=${encodeURIComponent(walletId)}&blockchain=${CIRCLE_BLOCKCHAIN}&txType=OUTBOUND&pageSize=20&order=DESC`,
+    // Circle rejects `blockchain` together with `walletIds`; the wallet id already pins the chain.
+    `/transactions?walletIds=${encodeURIComponent(walletId)}&txType=OUTBOUND&pageSize=20&order=DESC`,
     { userToken },
   );
   return transactions.find((t) => t.refId === refId);
