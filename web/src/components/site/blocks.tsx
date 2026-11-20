@@ -157,7 +157,7 @@ export function Code({ children }: { children: string }) {
 
 export const ARC_EXPLORER = "https://explorer.testnet.arc.io";
 export const contracts: [string, string, string][] = [
-  ["Vault", "0x7A40b36b012DC19b1f42dd68C13F4daE312e2319", "ERC-4626 vault over USDC: quote, sell, buy, settle, markImpaired"],
+  ["Vault", "0x19F0c2bEec4E3520F4C49c8B28CAa9eEb7972997", "ERC-4626 vault over USDC: quote, sell, buy, settle, markImpaired"],
   ["ClaimWrapper", "0xfc7E6ECF94e88E050c73733aC3cf03f831115952", "deposit, depositAndSell, collect, redeem"],
   ["ClaimToken", "0x39006ed8b5a1f7c7cd7c6C33f522fF8C8e61B090", "ERC-1155 claims, one id per fund and payout date"],
   ["NavOracle", "0xCd55924a73771d508887905473d93B981ac4A08b", "Chainlink Runtime Environment (CRE) receiver: NAV, time, issuer status"],
