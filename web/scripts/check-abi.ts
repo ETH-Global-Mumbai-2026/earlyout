@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { toFunctionSignature, toEventSignature, type Abi, type AbiFunction, type AbiEvent } from "viem";
-import { claimTokenAbi, fundTokenAbi, issuerAbi, oracleAbi, registryAbi, vaultAbi, wrapperAbi } from "../src/lib/abi.ts";
+import { claimTokenAbi, fundTokenAbi, issuerAbi, oracleAbi, payoutRouterAbi, registryAbi, vaultAbi, wrapperAbi } from "../src/lib/abi.ts";
 
 const out = resolve(import.meta.dirname, "../../contracts/out");
 const load = (name: string) => JSON.parse(readFileSync(resolve(out, `${name}.sol/${name}.json`), "utf8")).abi as Abi;
@@ -18,6 +18,7 @@ const checks: [string, Abi][] = [
   ["ClaimToken", claimTokenAbi],
   ["ClaimWrapper", wrapperAbi],
   ["Vault", vaultAbi],
+  ["PayoutRouter", payoutRouterAbi],
 ];
 let bad = 0;
 for (const [name, abi] of checks) {

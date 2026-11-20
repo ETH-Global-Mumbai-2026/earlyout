@@ -1,9 +1,11 @@
 "use client";
 
+import { formatUnits } from "viem";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AmountInput } from "@/components/AmountInput";
 import { TestTokens } from "@/components/app/TestTokens";
+import { BridgeIn } from "@/components/app/BridgeIn";
 import { WalletWelcome } from "@/components/app/WalletWelcome";
 import { Button, Notice, Segmented, Spinner } from "@/components/ui/primitives";
 import { TermSheet } from "@/components/ui/TermSheet";
@@ -156,6 +158,12 @@ export default function VaultPage() {
             <p className="t-caption mt-3">You can take out cash the pool is not using. Your share grows as payouts come in.</p>
           </TermSheet>
           <TestTokens need="deposit" />
+          <BridgeIn
+            onArrived={(a) => {
+              setMode("deposit");
+              setText(formatUnits(a, 6));
+            }}
+          />
         </div>
       </div>
     </div>

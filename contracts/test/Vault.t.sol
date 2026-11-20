@@ -154,7 +154,7 @@ contract VaultTest is Base {
         uint256 paid = vault.buy(id, 1e18, price);
         assertEq(paid, price);
         assertEq(claims.balanceOf(buyer, id), 1e18);
-        (uint256 amt, uint256 c) = vault.positions(id);
+        (uint256 amt, uint256 c,,,,,,) = vault.positions(id);
         assertEq(amt, 1e18);
         assertEq(c, cost / 2);
         assertEq(vault.totalAssets(), assetsBefore + price - cost / 2, "gain realised on sale");

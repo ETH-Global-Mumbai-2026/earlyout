@@ -131,7 +131,7 @@ Events: `ClaimMinted(claimId, fund, settleAt, owner, amount)` (on `depositAndSel
 
 ERC-4626 vault over USDC, name "Earlyout USDC Vault", symbol `eoUSDC`. Decimals offset 6 (`_decimalsOffset`), so shares have 12 decimals and a donation attack costs about 10^6 times what it could win.
 
-**State:** `positions[claimId] = {amount (18dp), cost (6dp)}`, `fundCost[fund]` (USDC deployed at cost), `impaired[fund]`, `deployedUsdc` (sum of costs).
+**State:** `positions[claimId] = {amount (18dp), cost (6dp), value0 (6dp), target (6dp), rate, t0, settleAt, folded}`, where the carried value runs linearly from `value0` at `t0` at `rate` until the payout date, then holds at `target` (value at purchase NAV) (`positionValue`). Per fund, running totals `accBase` and `accRate` hold the sum of unmatured lines, `maturedValue` the targets of folded positions, and a payout-date queue (`queueHead`) lets `fold(fund, maxSteps)` move matured claims out of the running totals; sales, buys, settlements, deposits and withdrawals fold up to 32 entries each. `fundCost[fund]` (USDC deployed at cost), `impaired[fund]`, `deployedUsdc` (sum of costs).
 
 ### Quote struct
 
@@ -223,13 +223,13 @@ When the oracle reports FAILED, quotes halt at once, but `totalAssets()` only dr
 
 - `deployedUsdc == sum(fundCost[f])` over listed funds, and each `fundCost[f]` equals the sum of `positions[id].cost` for that fund's claims. Every subtraction mirrors an earlier addition; `buy` removes `cost * amount / held` (rounded down).
 - A claim moves to the vault before USDC leaves it (`sell`), and USDC arrives before a claim leaves (`buy`).
-- `totalAssets()` changes in only five ways: USDC in or out, a sale at cost (neutral: idle falls, cost rises by the same amount), a buy above or below cost, a settlement (cost replaced by collected USDC), and impairment marking or clearing.
+- `totalAssets()` is idle USDC plus each open claim's carried value (or cost times `recoveryBps` for an impaired fund). It changes when USDC moves in or out, as time passes (carried values accrue toward the payout date), on a buy above or below the carried value, at settlement (carried value replaced by collected USDC, so only NAV drift moves it), and on impairment marking or clearing. A sale is neutral: idle falls and carried value rises by the same amount.
 - The `totalAssets` loop is bounded by `MAX_FUNDS = 10`.
 - Only listed fund tokens enter the wrapper; only the wrapper mints or burns claims; only allowlisted addresses hold transferred claims.
 
 ## Tests
 
-63 tests in `contracts/test/`, sharing setup in `Base.t.sol` (a `MockUSDC` with 6 decimals in `test/mocks/`).
+81 tests in `contracts/test/`, sharing setup in `Base.t.sol` (a `MockUSDC` with 6 decimals in `test/mocks/`).
 
 | File | Tests | Covers |
 |---|---|---|
@@ -274,7 +274,7 @@ From `contracts/deployments/arc-testnet.json` (block 71057910) and `contracts/de
 | IssuerStub | `0x2b492aD36D8BB7BA6341a06AF76f1614A9516Ebe` |
 | ClaimToken | `0x39006ed8b5a1f7c7cd7c6C33f522fF8C8e61B090` |
 | ClaimWrapper | `0xfc7E6ECF94e88E050c73733aC3cf03f831115952` |
-| Vault | `0x7A40b36b012DC19b1f42dd68C13F4daE312e2319` |
+| Vault | `0xa788e038e7E5B36b9BF0b0DeDd582F8C130727d0` |
 | USDC | `0x3600000000000000000000000000000000000000` |
 
 | Fund token | Address |
@@ -307,3 +307,13 @@ Read from Arc testnet with `cast call` on 13 November 2026.
 | Original deployer (owns nothing) | `0xC9007Afa7c9eCd6b0D9da62e3B820f69F730aFf3`, a Circle developer-controlled wallet created by Arc Studio |
 
 Per-fund terms are in [04-pricing.md](04-pricing.md#parameters-per-fund).
+
+## PayoutRouter
+
+`0x9F6185C5291377d2D5e71bae604daF19068ec3b7`. Sells a pending redemption and pays the seller on another chain in one transaction. `sellAndBridge(fund, amount, minPayout, destinationDomain, recipient, maxFee)`: checks the seller is on the ClaimToken allowlist (the router itself is allowlisted, so it checks for the seller), pulls the fund tokens, calls `ClaimWrapper.depositAndSell` (the USDC payout lands in the router), then calls Circle's TokenMessengerV2 `depositForBurnWithHook` with the Forwarding Service hook (`cctp-forward`, v0) and finality 1000. Circle mints `payout - maxFee` to `recipient` on the destination. Reverts `NotAllowlisted`, `ZeroRecipient`, `FeeTooHigh` (payout not above the fee). Emits `PaidOut`. Holds nothing between transactions. Domains: Arc 26, Base 6, Ethereum 0.
+
+## UsycSleeve
+
+`0x1457a5baaB6103E75FAA09fe7f4fA788F86c0277`. Holds the vault's idle USDC as USYC through Circle's Teller (`0x9fdF14c5B14173D74C08Af27AebFf39240dC105A` on Arc testnet). It is the only address that touches the Teller, so it is the one address Circle allowlists, and it stays when the vault is redeployed (`setVault`, owner). Only the vault can `subscribe(amount)` or `withdrawUsdc(amount)` (redeems at least `amount`, or everything if worth less, and sends USDC to the vault). `value()` is USYC held at the Teller's `previewRedeem`.
+
+In the Vault: `setSleeve` (owner; the old sleeve must be empty), `sweepToSleeve` and `pullFromSleeve` (owner), `sleeveValue()`. `totalAssets()`, the "Vault short of USDC" check, `maxWithdraw` and `maxRedeem` count idle USDC plus the sleeve's value, and a sale or LP withdrawal pulls any shortfall from the sleeve before paying (repeating up to four times to cover a redemption fee, then `SleeveShort`). All of this counts the sleeve only while `sleeve.vault()` is this vault.

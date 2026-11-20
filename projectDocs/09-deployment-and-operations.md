@@ -65,13 +65,34 @@ FundRegistry already holds its maximum of ten funds, so a new listing needs a ne
 Nothing in this repository settles claims automatically. After a claim's payout date someone must call:
 
 ```bash
-cast send 0x7A40b36b012DC19b1f42dd68C13F4daE312e2319 "settle(uint256)" <claimId> \
+cast send 0xa788e038e7E5B36b9BF0b0DeDd582F8C130727d0 "settle(uint256)" <claimId> \
   --rpc-url https://rpc.testnet.arc.io --private-key $OPS_PRIVATE_KEY
 ```
 
 `settle` is permissionless. It reverts with `NotDue` before the payout date, `NotHeld` if the vault has no position, and (through IssuerStub) if the issuer is failed, the NAV is missing or stale, or the stub cannot pay. Claim ids come from the Book (`claimId` column), the `ClaimSold` events, or `ClaimToken.claimId(fund, settleAt)`.
 
 The IssuerStub must hold enough USDC to pay `amount × NAV` for each claim it settles. The demo script notes that a 0.001 ACREDd sale needs about 1.11 USDC at settlement.
+
+### USYC sweeps (owner)
+
+Once Circle has allowlisted the sleeve (`0x1457a5baaB6103E75FAA09fe7f4fA788F86c0277`), keep a cash buffer idle and park the rest:
+
+```bash
+cast send $VAULT "sweepToSleeve(uint256)" 3000000 --private-key $OPS_PRIVATE_KEY --rpc-url https://rpc.testnet.arc.io   # 3 USDC into USYC
+cast send $VAULT "pullFromSleeve(uint256)" 1000000 --private-key $OPS_PRIVATE_KEY --rpc-url https://rpc.testnet.arc.io  # at least 1 USDC back
+cast call $VAULT "sleeveValue()(uint256)" --rpc-url https://rpc.testnet.arc.io
+```
+
+Sales and withdrawals pull from the sleeve on their own when idle USDC is short, so the buffer is about gas, not safety.
+
+### CCTP
+
+- The payout router must be allowlisted on ClaimToken and on every FundToken. A newly listed fund needs `setAllowlisted(router, true)` on its token.
+- Fee quotes and delivery status come from Circle's sandbox attestation API (`iris-api-sandbox.circle.com`); `/api/cctp/fee` and `/api/cctp/status` proxy them. A transfer stuck in `pending` for more than 30 minutes: check the message at `/v2/messages/26?transactionHash=<tx>`.
+
+### Circle Wallets
+
+`CIRCLE_API_KEY` (server) and `NEXT_PUBLIC_CIRCLE_APP_ID` turn on "Circle wallet" in the connect menu. Email sign-in needs SMTP set up in the Circle Console; PIN sign-in works without it. Gas Station needs a policy for ARC-TESTNET in the console.
 
 ## Monitoring
 

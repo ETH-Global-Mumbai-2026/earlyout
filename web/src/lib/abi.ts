@@ -70,7 +70,9 @@ export const vaultAbi = parseAbi([
   "function quoteFund(address fund, uint256 amount) view returns (Quote)",
   "function sell(uint256 claimId, uint256 amount, uint256 minPayout, address receiver) returns (uint256)",
   "function buyPrice(uint256 claimId, uint256 amount) view returns (uint256)",
-  "function positions(uint256 claimId) view returns (uint256 amount, uint256 cost)",
+  "function positions(uint256 claimId) view returns (uint256 amount, uint256 cost, uint256 value0, uint256 target, uint256 rate, uint64 t0, uint64 settleAt, bool folded)",
+  "function fold(address fund, uint256 maxSteps)",
+  "function positionValue(uint256 claimId) view returns (uint256)",
   "function sharePrice() view returns (uint256)",
   "function buy(uint256 claimId, uint256 amount, uint256 maxCost) returns (uint256)",
   "function settle(uint256 claimId) returns (uint256)",
@@ -93,4 +95,9 @@ export const vaultAbi = parseAbi([
   "event ClaimBought(uint256 indexed claimId, address indexed buyer, uint256 amount, uint256 usdcCost)",
   "event ClaimSettled(uint256 indexed claimId, uint256 usdcCollected)",
   "event FundImpaired(address indexed fund)",
+]);
+
+export const payoutRouterAbi = parseAbi([
+  "function sellAndBridge(address fund, uint256 amount, uint256 minPayout, uint32 destinationDomain, bytes32 recipient, uint256 maxFee) returns (uint256)",
+  "event PaidOut(address indexed seller, address indexed fund, uint256 claimId, uint256 amount, uint256 payout, uint32 destinationDomain, bytes32 recipient, uint256 maxFee)",
 ]);

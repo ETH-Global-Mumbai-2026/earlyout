@@ -14,7 +14,7 @@ Built at ETHGlobal Mumbai 2026, from scratch.
 | Arc Studio project | https://studio.arc.io/app/b9396e35-441e-4180-9444-965d2ad5dc59 |
 | Repository | https://github.com/ETH-Global-Mumbai-2026/earlyout |
 | ETHGlobal showcase and demo video | https://ethglobal.com/showcase/earlyout-sa4m0 |
-| Vault contract | [`0x7A40b36b012DC19b1f42dd68C13F4daE312e2319`](https://explorer.testnet.arc.io/address/0x7A40b36b012DC19b1f42dd68C13F4daE312e2319) |
+| Vault contract | [`0xa788e038e7E5B36b9BF0b0DeDd582F8C130727d0`](https://explorer.testnet.arc.io/address/0xa788e038e7E5B36b9BF0b0DeDd582F8C130727d0) |
 | Example transaction | A sale paid in USDC in one transaction: [`0x12aefa…`](https://explorer.testnet.arc.io/tx/0x12aefa9df1553daadc4c026566387f0fdde7cf9af6a0153a5eac5e141973a5ee) |
 | Builders | Satyam Sharma: GitHub [@SatyamDev803](https://github.com/SatyamDev803), X [@Satyam_S1603](https://x.com/Satyam_S1603) · Dex: GitHub [@dexalien](https://github.com/dexalien), X [@dextroalien](https://x.com/dextroalien) · Shreyas Thakur: GitHub [@ShreyasThakur0809](https://github.com/ShreyasThakur0809), X [@Shreyas__Thakur](https://x.com/Shreyas__Thakur) |
 
@@ -32,7 +32,7 @@ Arc reviewers: every item Arc asks for is mapped in [Arc submission checklist](#
 
 1. A holder deposits a fund token. ClaimWrapper files the redemption with the issuer and mints an ERC-1155 claim for that fund and payout date.
 2. The holder sells the claim to the Vault and receives USDC in the same transaction.
-3. The Vault holds the claim at cost, or sells it to a buyer, and collects the full amount at settlement. Liquidity providers (LPs) fund the vault in USDC and earn the spread.
+3. The Vault holds the claim, its value accruing toward the payout date, or sells it to a buyer, and collects the full amount at settlement. Liquidity providers (LPs) fund the vault in USDC and earn the spread.
 4. NAV and issuer status arrive through NavOracle as Chainlink CRE reports. A failed issuer halts trading, and `markImpaired` writes that fund down inside `totalAssets()`, so every LP's share price falls in one transaction.
 5. Each sale is written to Arkiv as an entity that expires on its payout date. The Book screen reads only from Arkiv.
 
@@ -333,6 +333,23 @@ It runs `select().from(earlyout.claims).where(eq("status","open")).ownedBy(write
 
 ---
 
+## Circle: USDC, CCTP, USYC and Wallets
+
+Earlyout settles in USDC on Arc and uses four more Circle products. Each is live on Arc testnet.
+
+| Product | What it does in Earlyout | Code |
+|---|---|---|
+| USDC | The vault's asset, every sale and every settlement, and gas on Arc | `contracts/src/Vault.sol` |
+| CCTP V2 with the Forwarding Service | A seller can get paid on Base or Ethereum in one transaction (`PayoutRouter.sellAndBridge`); an LP can bring USDC from Base or Ethereum to Arc and deposit it. Circle mints on the destination, so nobody needs gas there | `contracts/src/PayoutRouter.sol`, `web/src/lib/cctp.ts`, `web/src/lib/source/bridgeIn.ts`, `web/src/app/api/cctp/` |
+| USYC | Idle vault USDC earns Treasury yield. `UsycSleeve` is the one address that touches the Teller; the vault counts its value in `totalAssets()` and pulls cash back when a sale or withdrawal needs it | `contracts/src/UsycSleeve.sol`, `Vault.setSleeve`, `sweepToSleeve`, `pullFromSleeve` |
+| Wallets (user-controlled) and Gas Station | Sign in with a Circle wallet: no extension, a PIN in Circle's frame, a smart account on Arc whose gas Circle sponsors. Every app action routes through Circle challenges | `web/src/server/circle.ts`, `web/src/lib/circle/wallet.ts`, `web/src/app/api/circle/` |
+
+Proof on Arc testnet:
+- CCTP payout from Arc to Base Sepolia through the router: [`0x2f43…7f61`](https://explorer.testnet.arc.io/tx/0x2f433eadcca00e3cb381c3a436c8f830498abc4a403f11edfa65a20cc1247f61), minted on Base without Base gas.
+- CCTP from Base Sepolia to Arc for an LP: burn [`0x3846…4edc`](https://sepolia.basescan.org/tx/0x384618ff9f47d550e67677450155fd101418a5df4f6c2f0f32b93462daf94edc), forwarded mint on Arc [`0x6c13…b692`](https://explorer.testnet.arc.io/tx/0x6c13dbbbaa5bb8b87ec9bf6874ccf7b67fa589ffeb9cad6668f8e5a06674b692) (4.979226 USDC after the 0.020774 fee), then a vault deposit [`0xcd7f…9ef6`](https://explorer.testnet.arc.io/tx/0xcd7ff0b1b63e869357563b01dfe1fdcfe9a539d152b8e91ecc561411882e9ef6).
+- A sale from a Circle user-controlled wallet (smart account, PIN approval): [`0x3e0e…906a`](https://explorer.testnet.arc.io/tx/0x3e0e4bc4f0bc4e0a290bfd2f65fea60ea7eb967cb21f192887ee45379a99906a). Gas paid by Circle Gas Station's paymaster `0x03df76c8c30a88f424cf3cbbc36a1ca02763103b`; the wallet paid none.
+- USYC sleeve deployed and wired to the vault; subscribing waits for Circle to allowlist the sleeve.
+
 ## Contracts (Arc testnet, chain 5042002)
 
 | Contract | Address | Job |
@@ -342,7 +359,9 @@ It runs `select().from(earlyout.claims).where(eq("status","open")).ownedBy(write
 | IssuerStub | [`0x2b492aD36D8BB7BA6341a06AF76f1614A9516Ebe`](https://explorer.testnet.arc.io/address/0x2b492aD36D8BB7BA6341a06AF76f1614A9516Ebe) | Stand-in issuer: queues redemptions, pays NAV after the delay |
 | ClaimToken | [`0x39006ed8b5a1f7c7cd7c6C33f522fF8C8e61B090`](https://explorer.testnet.arc.io/address/0x39006ed8b5a1f7c7cd7c6C33f522fF8C8e61B090) | ERC-1155 claims, allowlisted transfers |
 | ClaimWrapper | [`0xfc7E6ECF94e88E050c73733aC3cf03f831115952`](https://explorer.testnet.arc.io/address/0xfc7E6ECF94e88E050c73733aC3cf03f831115952) | deposit, depositAndSell, collect, redeem |
-| Vault | [`0x7A40b36b012DC19b1f42dd68C13F4daE312e2319`](https://explorer.testnet.arc.io/address/0x7A40b36b012DC19b1f42dd68C13F4daE312e2319) | quote, quoteFund, sell, buy, settle, markImpaired |
+| PayoutRouter | [`0x9F6185C5291377d2D5e71bae604daF19068ec3b7`](https://explorer.testnet.arc.io/address/0x9F6185C5291377d2D5e71bae604daF19068ec3b7) | sellAndBridge: sell, then pay out on Base or Ethereum through Circle CCTP |
+| UsycSleeve | [`0x1457a5baaB6103E75FAA09fe7f4fA788F86c0277`](https://explorer.testnet.arc.io/address/0x1457a5baaB6103E75FAA09fe7f4fA788F86c0277) | Idle vault USDC held as USYC through Circle's Teller |
+| Vault | [`0xa788e038e7E5B36b9BF0b0DeDd582F8C130727d0`](https://explorer.testnet.arc.io/address/0xa788e038e7E5B36b9BF0b0DeDd582F8C130727d0) | quote, quoteFund, sell, buy, settle, markImpaired |
 | ACRED (stand-in) | [`0xCd5DE841b0f781A866cA6E978A19d6d5431683E2`](https://explorer.testnet.arc.io/address/0xCd5DE841b0f781A866cA6E978A19d6d5431683E2) | 90-day payout, 1-day window |
 | ACREDd (demo window) | [`0x8d9FF934E08DA9f8AEbF2280dAD218e8d176d06F`](https://explorer.testnet.arc.io/address/0x8d9FF934E08DA9f8AEbF2280dAD218e8d176d06F) | 15-minute payout, 5-minute window |
 | JAAA (stand-in) | [`0x7ED73c4653aCf10830f2c5811349bc1d6bF012e1`](https://explorer.testnet.arc.io/address/0x7ED73c4653aCf10830f2c5811349bc1d6bF012e1) | 7-day payout; NAV from its Chainlink feed |
@@ -402,7 +421,7 @@ Try it as a judge: open the [Sell](https://earlyout.vercel.app/sell) screen, con
 
 ## Honest limits
 
-- **Open finding, LP gain sniping (High, found by Arc Studio's review).** Claims sit in the vault at cost and the whole gain lands when `settle` runs, so capital that deposits just before a settlement and leaves right after takes a share of a gain earlier LPs funded. Reproduced in `docs/studio/poc/`. Accepted for the testnet demo, where the vault holds a few USDC. The fix before any real money is linear accrual of claim value to the payout date inside `totalAssets()`; the design is in `docs/studio/02-security-review.md`.
+- **Fixed: LP gain sniping (High, found by Arc Studio's review).** Claims used to sit in the vault at cost, so the whole gain landed when `settle` ran and late capital could take a share of it. Each claim's value now accrues linearly to its payout date inside `totalAssets()`, and the proof of concept is a passing test (`test_snipingNoLongerPays`). Details in `projectDocs/10-security.md`.
 - The CRE workflow is simulated with `--broadcast`, not deployed to the CRE network. Between simulations our ops wallet is the oracle forwarder and writes the same reports; while it is, it could overwrite a status with a same-timestamp report.
 - Settlement needs a keeper to call `settle` at maturity. Nothing settles on its own.
 - The demo controls on the Risk screen act on the stand-in issuer, testnet only, and need a demo key.

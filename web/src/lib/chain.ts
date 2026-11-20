@@ -1,4 +1,5 @@
 import { defineChain } from "viem";
+import { baseSepolia, sepolia } from "viem/chains";
 import { createConfig, http } from "wagmi";
 import { injected } from "wagmi/connectors";
 
@@ -13,12 +14,17 @@ export const arcTestnet = defineChain({
 });
 
 export const wagmiConfig = createConfig({
-  chains: [arcTestnet],
+  // Base and Ethereum testnets only for bringing USDC in through Circle CCTP.
+  chains: [arcTestnet, baseSepolia, sepolia],
   connectors: [injected()],
   // Arc's public RPC rate-limits bursts and caps batch size. Contract reads in the
   // same tick fold into one Multicall3 call; the rest go out in small JSON-RPC batches.
   batch: { multicall: { wait: 25 } },
-  transports: { [arcTestnet.id]: http(undefined, { batch: { wait: 25, batchSize: 10 }, retryCount: 3, retryDelay: 400 }) },
+  transports: {
+    [arcTestnet.id]: http(undefined, { batch: { wait: 25, batchSize: 10 }, retryCount: 3, retryDelay: 400 }),
+    [baseSepolia.id]: http(),
+    [sepolia.id]: http(),
+  },
   ssr: true,
 });
 

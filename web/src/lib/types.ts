@@ -1,3 +1,4 @@
+import type { CctpChainKey } from "./cctp";
 import type { Address, Hex } from "viem";
 
 export type Verdict = "BUY" | "REFUSE" | "HALT";
@@ -56,7 +57,7 @@ export type Account = {
   claimAllowlisted: boolean; // may hold claims, so may buy one from the vault
 };
 
-export type Receipt = { hash: Hex; claimId?: bigint; payout?: bigint };
+export type Receipt = { hash: Hex; claimId?: bigint; payout?: bigint; bridge?: { to: CctpChainKey; maxFee: bigint } };
 
 /// What the vault holds in one claim id, priced for a buyer: NAV minus the
 /// time and credit terms for the time left. The buyer collects full NAV at payout.
@@ -97,6 +98,8 @@ export interface Source {
   account(address: Address): Promise<Account>;
   issuerFailed(): Promise<boolean>;
   sell(fund: Address, amount: bigint, minPayout: bigint): Promise<Receipt>;
+  /// Sell and have Circle CCTP deliver the USDC to the same address on another chain.
+  sellAndBridge(fund: Address, amount: bigint, minPayout: bigint, to: CctpChainKey, maxFee: bigint): Promise<Receipt>;
   deposit(amount: bigint): Promise<Receipt>;
   withdraw(amount: bigint): Promise<Receipt>;
   markImpaired(fund: Address): Promise<Receipt>;

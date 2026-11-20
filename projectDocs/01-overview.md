@@ -74,6 +74,6 @@ The app only offers the four funds with a real wait (`isScheduled` in `web/src/l
 ## Known limits
 
 - Settlement needs someone to call `Vault.settle` after each payout date. There is no keeper process in this repository.
-- LP gain sniping (open High): claims sit at cost, so the whole gain lands in one step at `settle`. See [10-security.md](10-security.md).
+- LP gain sniping (High, fixed 20 November 2026): claim value now accrues to the payout date. See [10-security.md](10-security.md).
 - The Arkiv block scan (buys, settlements, NAV history) runs once a day, or on demand. Sales are indexed from their receipt within seconds.
 - Ten listings fill FundRegistry's limit of ten.

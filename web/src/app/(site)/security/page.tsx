@@ -13,7 +13,7 @@ const findings: [string, string, string][] = [
   ["M3 fixed", "Shared CRE forwarder", "Optional workflow owner and id pinning"],
   ["M4 fixed", "Settlement on a bad NAV", "Settle reverts; retry later"],
   ["M5 fixed", "Allowlist skipped on depositAndSell", "Both entry paths enforce it"],
-  ["H1 open", "LP gain sniping at settlement", "Accepted for testnet, see below"],
+  ["H1 fixed", "LP gain sniping at settlement", "Claim value accrues to the payout date"],
 ];
 
 const trust: [string, string, string][] = [

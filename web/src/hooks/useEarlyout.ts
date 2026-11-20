@@ -1,16 +1,27 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
 import { source } from "@/lib/source";
 import { MODE } from "@/lib/addresses";
+import { circleStore, type CircleState } from "@/lib/circle/wallet";
+
+const OFF: CircleState = { status: "off" };
+
+/// The Circle wallet session, if the user signed in with Circle.
+export function useCircle(): CircleState {
+  return useSyncExternalStore(circleStore.subscribe, circleStore.get, () => OFF);
+}
 
 const MOCK_ACCOUNT = "0x000000000000000000000000000000000000d3b0" as Address;
 
 export function useWallet() {
   const acc = useAccount();
+  const circle = useCircle();
   if (MODE === "mock") return { address: MOCK_ACCOUNT, isConnected: true, chainId: 5042002 };
+  if (circle.status === "ready") return { address: circle.address, isConnected: true, chainId: 5042002 };
   return { address: acc.address, isConnected: acc.isConnected, chainId: acc.chainId };
 }
 

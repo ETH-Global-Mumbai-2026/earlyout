@@ -102,6 +102,7 @@ export const mockSource: Source = {
     else if (now - f.navUpdatedAt > f.maxAge) [verdict, reason] = ["HALT", "NAV is stale"];
     else if (f.impaired) [verdict, reason] = ["HALT", "Fund is impaired"];
     else if (amount === 0n) [verdict, reason] = ["REFUSE", "Amount is zero"];
+    else if (payout === 0n && spread < BPS) [verdict, reason] = ["REFUSE", "Amount too small"];
     else if (f.deployedUsdc + payout > f.capUsdc) [verdict, reason] = ["REFUSE", "Over the fund cap"];
     else if (state.idle < payout) [verdict, reason] = ["REFUSE", "Vault short of USDC"];
     return {
@@ -166,6 +167,12 @@ export const mockSource: Source = {
       keccak256(encodeAbiParameters(parseAbiParameters("address, uint64"), [f.address, BigInt(q.settleAt)])),
     );
     return { hash: fakeHash(), claimId, payout: q.payout };
+  },
+  async sellAndBridge(fundAddr, amount, minPayout, to, maxFee): Promise<Receipt> {
+    const r = await this.sell(fundAddr, amount, minPayout);
+    // The USDC leaves for the other chain, so it is not in the Arc wallet.
+    state.user.usdc -= r.payout ?? 0n;
+    return { ...r, bridge: { to, maxFee } };
   },
   async deposit(amount): Promise<Receipt> {
     await delay(700);

@@ -1,12 +1,12 @@
 # 10. Security
 
-Earlyout is a testnet deployment. It has had one automated review (Arc Studio, 6 November 2026, recorded in `docs/studio/02-security-review.md`) and no independent audit. One High finding is open by decision. Nothing here is ready for real money; the checklist at the end lists what is missing.
+Earlyout is a testnet deployment. It has had one automated review (Arc Studio, 6 November 2026, recorded in `docs/studio/02-security-review.md`) and no independent audit. Its one High finding (LP gain sniping) was fixed on 20 November 2026. Nothing here is ready for real money; the checklist at the end lists what is missing.
 
 ## Assets and actors
 
 | Asset | Held by |
 |---|---|
-| LP USDC | Vault (idle) and claims at cost |
+| LP USDC | Vault (idle) and claims at their accrued value |
 | Sellers' fund tokens | IssuerStub (queued redemptions) |
 | Redemption USDC | IssuerStub until settlement, then ClaimWrapper until redeemed |
 | Price and halt signals | NavOracle |
@@ -30,7 +30,7 @@ Earlyout is a testnet deployment. It has had one automated review (Arc Studio, 6
 | Another CRE workflow writing our funds | `setExpectedWorkflowOwner` / `setExpectedWorkflowId` | Pinning is off; must be set before using the deployed forwarder |
 | Selling into a failed fund | HALT on FAILED status; `markImpaired` writes down for every LP at once | Gap between the issuer failing and the report landing |
 | LP exiting before a writedown, or entering before a recovery | LP lock states 1 and 2 (`maxDeposit`, `maxMint`, `maxWithdraw`, `maxRedeem`) | None known |
-| LP gain sniping at settlement | None (open High, below) | Accepted for testnet |
+| LP gain sniping at settlement | Claim value accrues linearly to the payout date inside `totalAssets()` (fixed High, below) | NAV drift between purchase and payout still lands at settlement |
 | Bank run on the vault | Withdrawals capped at idle USDC; claims never sold to pay LPs | LPs may wait for settlements |
 | Over-concentration | Per-fund exposure cap; idle-USDC check | Caps are owner-set |
 | Reentrancy | `nonReentrant` on `sell`, `buy`, `settle`; claim moves before USDC in `sell` | ERC-4626 entry points are unguarded but make no external call mid-update |
@@ -46,11 +46,11 @@ Earlyout is a testnet deployment. It has had one automated review (Arc Studio, 6
 
 Scope: FundRegistry, NavOracle, IssuerStub, ClaimToken, ClaimWrapper, FundToken, Vault and IReceiver. Two independent source reviews, Slither, and Foundry runs before and after. 50 of 50 tests passed on the code as received; after the fixes 63 of 63 pass (13 new tests in `contracts/test/ReviewFixes.t.sol`). Two existing tests were edited to push a fresh NAV after warping 90 days.
 
-### Open: High, LP gain sniping
+### Fixed: High, LP gain sniping
 
-Claims sit in `totalAssets()` at cost and the whole gain appears in one step when `settle` runs (also when `buy` sells above cost, or `clearImpaired` lifts a writedown). `deposit` and `redeem` are open at all times, so capital that arrives just before a settlement takes a pro-rata share of a gain earlier LPs funded and can leave right after. The proof of concept (`docs/studio/poc/LpGainSniping.t.sol.txt`): with 100,000 USDC of LP capital and one 10-unit claim worth a 667.15 USDC gain, an attacker who deposits 1,000,000 USDC, calls `settle` and redeems in one transaction keeps 606.50 USDC; the existing LP gets 60.65.
+Found by the review: claims sat in `totalAssets()` at cost and the whole gain appeared in one step when `settle` ran, while `deposit` and `redeem` are always open. Capital that arrived just before a settlement took a pro-rata share of a gain earlier LPs funded. The proof of concept (`docs/studio/poc/LpGainSniping.t.sol.txt`): an attacker who deposited 1,000,000 USDC, called `settle` and redeemed kept 606.50 USDC of a 667.15 USDC gain.
 
-Options from the review: (1) accrue claim value linearly from sale to payout inside `totalAssets()`, true-up at settlement; (2) stream realised gains over a fixed period; (3) accept for the demo. Decision: option 3 for testnet, option 1 before any real money.
+Fix (20 November 2026, review option 1): each position carries a value that rises on a straight line from purchase to its payout date, toward its value at the purchase NAV (`Vault.positionValue`). Each fund keeps the sum of its claims' lines as two running totals plus a payout-date queue, so `totalAssets()` does not loop over open claims and there is no limit on how many a fund can have; claims that reach their payout date are folded out of the totals by `fold` (permissionless, and automatic on sales, buys, settlements, deposits and withdrawals). `sell`, `buy` and `settle` checkpoint the line, so several sales into one claim stay exact. Sales that would pay nothing get REFUSE "Amount too small". What remains at settlement is NAV drift since purchase, which can span the full settlement delay (90 days for ACRED); a buy from the vault can also move `totalAssets` by a few basis points, since the buy price leaves out the base and usage terms. The proof of concept is now `test_snipingNoLongerPays` in `contracts/test/VaultAccrual.t.sol`: the attacker makes at most 1 USDC and the LP keeps at least 99% of the gain. The Vault was redeployed alone (`contracts/script/DeployVault.s.sol`) and the wrapper repointed; the old vault (`VaultV1` in `deployments/arc-testnet.json`) holds one claim until it settles on 10 February 2027.
 
 ### Fixed: five Medium findings
 
@@ -86,11 +86,13 @@ Options from the review: (1) accrue claim value linearly from sale to payout ins
 4. The Next.js server keeps `OPS_PRIVATE_KEY`, `ARKIV_WRITER_PRIVATE_KEY`, `DEMO_TOKEN` and `CRON_SECRET` secret.
 5. Chainlink's mainnet NAV feeds are correct, and the server reads them from an honest Ethereum RPC.
 
+Added for the Circle integrations: the ops wallet can point the USYC sleeve at any vault (`setVault`), so it is trusted with the sleeve's USYC as it is with the rest. A vault counts the sleeve only while the sleeve points back at it, so a repointed sleeve is never counted twice. If a redemption pays less than asked (a Teller fee), the vault pulls again, up to four times, and reverts with `SleeveShort` rather than underpay. The Teller's deposit price is about 0.01% below its redemption price, so each sweep costs that much once; the vault values USYC at the Teller's price, which steps once a day by about a day of Treasury yield. The payout router holds nothing between transactions and checks the seller's eligibility itself. The Circle API key stays on the server; the execute route only builds calls to Earlyout's own contracts, USDC and listed fund tokens, and every call still needs the user's PIN.
+
 ## Before mainnet
 
 From the review, the README and the code:
 
-- [ ] Fix LP gain sniping with linear accrual of claim value inside `totalAssets()` (review option 1).
+- [x] Fix LP gain sniping with linear accrual of claim value inside `totalAssets()` (review option 1). Done 20 November 2026.
 - [ ] Independent audit of the contracts.
 - [ ] Replace `IssuerStub` with the real issuer's redemption path, and `FundToken` with real fund tokens; confirm their decimals (the maths assumes 18).
 - [ ] Replace the issuer status API with the issuer's own attestation.

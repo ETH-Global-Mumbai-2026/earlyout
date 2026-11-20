@@ -13,6 +13,7 @@ import {FundRegistry} from "./FundRegistry.sol";
 import {NavOracle} from "./NavOracle.sol";
 import {ClaimToken} from "./ClaimToken.sol";
 import {ClaimWrapper} from "./ClaimWrapper.sol";
+import {UsycSleeve} from "./UsycSleeve.sol";
 
 /// @notice USDC vault that buys redemption claims at NAV minus a spread that
 ///         names its four reasons, and collects the full amount at payout.
@@ -38,13 +39,27 @@ contract Vault is ERC4626, ERC1155Holder, Ownable, ReentrancyGuard {
         uint256 capacityLeft;
     }
 
+    /// @dev Carried value runs on a straight line from (t0, value0) at `rate`
+    ///      until settleAt, then holds at target. Each fund keeps the sum of its
+    ///      unmatured lines as two running totals, so totalAssets never loops
+    ///      over open claims.
     struct Position {
         uint256 amount; // claim units held (18dp)
         uint256 cost; // USDC paid for them (6dp)
+        uint256 value0; // carried value at t0 (6dp)
+        uint256 target; // USDC expected at payout, at the purchase NAV (6dp)
+        uint256 rate; // (target - value0) * 1e18 / (settleAt - t0)
+        uint64 t0; // last checkpoint
+        uint64 settleAt; // payout date, cached from ClaimToken
+        bool folded; // matured and moved into maturedValue
     }
 
     uint256 private constant BPS = 10_000;
     uint256 private constant YEAR = 365 days;
+    uint256 private constant WAD = 1e18;
+    /// @dev Matured queue entries folded automatically per fund on each sale,
+    ///      buy, settlement, deposit or withdrawal. fold() clears any backlog.
+    uint256 private constant AUTO_FOLD = 32;
 
     IERC20 public immutable usdc;
     FundRegistry public immutable registry;
@@ -55,7 +70,19 @@ contract Vault is ERC4626, ERC1155Holder, Ownable, ReentrancyGuard {
     mapping(uint256 => Position) public positions;
     mapping(address => uint256) public fundCost; // USDC deployed per fund, at cost
     mapping(address => bool) public impaired;
+    /// @dev Per fund: unmatured value at time t is (accBase + accRate * t) / 1e18.
+    mapping(address => int256) public accBase;
+    mapping(address => uint256) public accRate;
+    /// @notice Per fund: targets of positions that reached their payout date and were folded.
+    mapping(address => uint256) public maturedValue;
+    /// @dev Per fund: claim ids in payout-date order; entries before queueHead are folded.
+    mapping(address => uint256[]) private _queue;
+    mapping(address => uint256) public queueHead;
+    mapping(uint256 => bool) private _queued;
+    mapping(uint256 => uint64) private _due;
     uint256 public deployedUsdc;
+    /// @notice Where idle USDC earns Treasury yield as USYC. Zero when unused.
+    UsycSleeve public sleeve;
 
     event ClaimSold(
         uint256 indexed claimId,
@@ -72,6 +99,7 @@ contract Vault is ERC4626, ERC1155Holder, Ownable, ReentrancyGuard {
     event ClaimSettled(uint256 indexed claimId, uint256 usdcCollected);
     event FundImpaired(address indexed fund);
     event FundRecovered(address indexed fund);
+    event SleeveSet(address indexed sleeve);
 
     error NotBuyable(Verdict verdict, string reason);
     error BelowMinPayout(uint256 payout, uint256 minPayout);
@@ -85,6 +113,8 @@ contract Vault is ERC4626, ERC1155Holder, Ownable, ReentrancyGuard {
     error IssuerStillFailed(address fund);
     error NotImpaired(address fund);
     error FundNotListed(address fund);
+    error SleeveNotEmpty();
+    error SleeveShort();
 
     constructor(
         IERC20 usdc_,
@@ -147,10 +177,11 @@ contract Vault is ERC4626, ERC1155Holder, Ownable, ReentrancyGuard {
         if (impaired[fund]) return _verdict(q, Verdict.HALT, "Fund is impaired");
         if (!t.listed) return _verdict(q, Verdict.REFUSE, "Fund not listed");
         if (amount == 0) return _verdict(q, Verdict.REFUSE, "Amount is zero");
+        if (q.payout == 0 && spread < BPS) return _verdict(q, Verdict.REFUSE, "Amount too small");
         if (secs == 0) return _verdict(q, Verdict.REFUSE, "Claim is already due");
         if (spread >= BPS) return _verdict(q, Verdict.REFUSE, "Spread too wide");
         if (fundCost[fund] + q.payout > t.exposureCapUsdc) return _verdict(q, Verdict.REFUSE, "Over the fund cap");
-        if (idleUsdc() < q.payout) return _verdict(q, Verdict.REFUSE, "Vault short of USDC");
+        if (idleUsdc() + sleeveValue() < q.payout) return _verdict(q, Verdict.REFUSE, "Vault short of USDC");
         return _verdict(q, Verdict.BUY, "");
     }
 
@@ -182,14 +213,29 @@ contract Vault is ERC4626, ERC1155Holder, Ownable, ReentrancyGuard {
         if (q.payout < minPayout) revert BelowMinPayout(q.payout, minPayout);
         payout = q.payout;
 
-        (address fund,) = claims.meta(claimId);
+        (address fund, uint64 settleAt) = claims.meta(claimId);
         claims.safeTransferFrom(msg.sender, address(this), claimId, amount, "");
 
-        positions[claimId].amount += amount;
-        positions[claimId].cost += payout;
+        _fold(fund, AUTO_FOLD);
+        Position storage p = positions[claimId];
+        uint256 v;
+        if (p.amount == 0) {
+            p.settleAt = settleAt;
+            if (!_queued[claimId]) _enqueue(fund, claimId, settleAt);
+        } else {
+            v = positionValue(claimId);
+            _removeAccrual(fund, p);
+        }
+        p.amount += amount;
+        p.cost += payout;
+        p.value0 = v + payout;
+        p.target += amount * q.nav / 1e30;
+        p.t0 = uint64(block.timestamp);
+        _addAccrual(fund, p);
         fundCost[fund] += payout;
         deployedUsdc += payout;
 
+        _ensureIdle(payout);
         usdc.safeTransfer(receiver, payout);
         emit ClaimSold(claimId, receiver, amount, payout, q.nav, q.baseBps, q.utilBps, q.timeBps, q.creditBps);
     }
@@ -207,9 +253,17 @@ contract Vault is ERC4626, ERC1155Holder, Ownable, ReentrancyGuard {
         cost = buyPrice(claimId, amount);
         if (cost > maxCost) revert AboveMaxCost(cost, maxCost);
 
+        _fold(fund, AUTO_FOLD);
+        uint256 v = positionValue(claimId);
+        _removeAccrual(fund, p);
         uint256 costShare = p.cost * amount / p.amount;
+        p.value0 = v - v * amount / p.amount;
+        p.target -= p.target * amount / p.amount;
         p.amount -= amount;
         p.cost -= costShare;
+        p.t0 = uint64(block.timestamp);
+        if (p.amount == 0) delete positions[claimId]; // the queue entry stays; fold skips it
+        else _addAccrual(fund, p);
         fundCost[fund] -= costShare;
         deployedUsdc -= costShare;
 
@@ -228,6 +282,10 @@ contract Vault is ERC4626, ERC1155Holder, Ownable, ReentrancyGuard {
         if (!wrapper.isCollected(claimId)) wrapper.collect(claimId);
         received = wrapper.redeem(claimId, p.amount);
 
+        _fold(fund, AUTO_FOLD);
+        Position storage s = positions[claimId];
+        if (s.folded) maturedValue[fund] -= s.target;
+        else _removeAccrual(fund, s);
         fundCost[fund] -= p.cost;
         deployedUsdc -= p.cost;
         delete positions[claimId];
@@ -254,24 +312,170 @@ contract Vault is ERC4626, ERC1155Holder, Ownable, ReentrancyGuard {
 
     // ---------------------------------------------------------------- accounting
 
+    /// @notice The vault's carried value of a claim: linear from purchase to
+    ///      payout date toward its value at the purchase NAV, flat after.
+    function positionValue(uint256 claimId) public view returns (uint256) {
+        Position storage p = positions[claimId];
+        if (p.amount == 0) return 0;
+        if (p.folded || block.timestamp >= p.settleAt) return p.target;
+        return p.value0 + p.rate * (block.timestamp - p.t0) / WAD;
+    }
+
+    /// @notice Move up to `maxSteps` claims that reached their payout date out
+    ///         of the fund's running totals. Anyone may call it; it never
+    ///         changes totalAssets, only the gas totalAssets costs.
+    function fold(address fund, uint256 maxSteps) external {
+        _fold(fund, maxSteps);
+    }
+
+    function _fold(address fund, uint256 maxSteps) private {
+        uint256[] storage q = _queue[fund];
+        uint256 h = queueHead[fund];
+        uint256 end = h + maxSteps < q.length ? h + maxSteps : q.length;
+        while (h < end && _due[q[h]] <= block.timestamp) {
+            uint256 id = q[h];
+            Position storage p = positions[id];
+            if (p.amount != 0 && !p.folded) {
+                _removeAccrual(fund, p);
+                maturedValue[fund] += p.target;
+                p.folded = true;
+            }
+            _queued[id] = false;
+            ++h;
+        }
+        queueHead[fund] = h;
+    }
+
+    function _foldAll() private {
+        uint256 n = registry.fundCount();
+        for (uint256 i; i < n; ++i) {
+            _fold(registry.fundAt(i), AUTO_FOLD);
+        }
+    }
+
+    /// @dev Appends the id and moves it back past any later payout date, so
+    ///      the queue stays ordered if a fund's terms change.
+    function _enqueue(address fund, uint256 claimId, uint64 settleAt) private {
+        uint256[] storage q = _queue[fund];
+        _due[claimId] = settleAt;
+        _queued[claimId] = true;
+        q.push(claimId);
+        uint256 head = queueHead[fund];
+        for (uint256 i = q.length - 1; i > head && _due[q[i - 1]] > settleAt; --i) {
+            (q[i - 1], q[i]) = (q[i], q[i - 1]);
+        }
+    }
+
+    /// @dev Sets the position's rate from value0 to target, then adds its line to the totals.
+    function _addAccrual(address fund, Position storage p) private {
+        if (p.target < p.value0) p.value0 = p.target; // never carry above what payout is worth
+        p.rate = (p.target - p.value0) * WAD / (p.settleAt - p.t0);
+        accBase[fund] += int256(p.value0 * WAD) - int256(p.rate * p.t0);
+        accRate[fund] += p.rate;
+    }
+
+    function _removeAccrual(address fund, Position storage p) private {
+        accBase[fund] -= int256(p.value0 * WAD) - int256(p.rate * p.t0);
+        accRate[fund] -= p.rate;
+    }
+
+    // ---------------------------------------------------------------- USYC sleeve
+
+    /// @notice Point the vault at a USYC sleeve (or zero to stop). The old
+    ///         sleeve must be empty, so no value is left behind.
+    function setSleeve(address sleeve_) external onlyOwner {
+        if (address(sleeve) != address(0)) {
+            if (sleeve.value() > 0) revert SleeveNotEmpty();
+            usdc.forceApprove(address(sleeve), 0);
+        }
+        sleeve = UsycSleeve(sleeve_);
+        if (sleeve_ != address(0)) usdc.forceApprove(sleeve_, type(uint256).max);
+        emit SleeveSet(sleeve_);
+    }
+
+    /// @notice Move idle USDC into USYC.
+    function sweepToSleeve(uint256 amount) external onlyOwner {
+        sleeve.subscribe(amount);
+    }
+
+    /// @notice Bring at least `amount` USDC back from USYC.
+    function pullFromSleeve(uint256 amount) external onlyOwner {
+        sleeve.withdrawUsdc(amount);
+    }
+
+    /// @notice USYC value the vault can draw on: zero unless the sleeve also
+    ///         points back at this vault, so a repointed sleeve is never
+    ///         counted by two vaults.
+    function sleeveValue() public view returns (uint256) {
+        return _sleeveLive() ? sleeve.value() : 0;
+    }
+
+    function _sleeveLive() private view returns (bool) {
+        return address(sleeve) != address(0) && sleeve.vault() == address(this);
+    }
+
+    /// @dev Tops idle USDC up from the sleeve when a payment needs more than is
+    ///      idle. Repeat pulls cover a redemption fee the first one missed; each
+    ///      shortfall is the fee on the last, so it shrinks to dust fast.
+    function _ensureIdle(uint256 need) private {
+        if (idleUsdc() >= need || !_sleeveLive()) return;
+        for (uint256 i; i < 4 && idleUsdc() < need; ++i) {
+            sleeve.withdrawUsdc(need - idleUsdc() + 2); // 2 units of margin for rounding on dust redemptions
+        }
+        if (idleUsdc() < need) revert SleeveShort();
+    }
+
     function idleUsdc() public view returns (uint256) {
         return usdc.balanceOf(address(this));
     }
 
-    /// @dev Idle USDC plus claims at cost, written down where impaired. Gains
-    ///      are realised at settlement or sale.
+    /// @dev Idle USDC plus each open claim's carried value, or cost times
+    ///      recoveryBps where the fund is impaired. Gains accrue over time, so
+    ///      settlement leaves only NAV drift to realise.
     function totalAssets() public view override returns (uint256 total) {
-        total = idleUsdc();
+        total = idleUsdc() + sleeveValue();
         uint256 n = registry.fundCount();
         for (uint256 i; i < n; ++i) {
             address fund = registry.fundAt(i);
             uint256 cost = fundCost[fund];
             if (cost == 0) continue;
             if (impaired[fund]) {
-                cost = cost * registry.getTerms(fund).recoveryBps / BPS;
+                total += cost * registry.getTerms(fund).recoveryBps / BPS;
+                continue;
             }
-            total += cost;
+            total += _fundValue(fund);
         }
+    }
+
+    /// @dev maturedValue plus the running line, with queue entries that matured
+    ///      but are not folded yet swapped from their line to their target.
+    function _fundValue(address fund) private view returns (uint256) {
+        int256 running = accBase[fund] + int256(accRate[fund] * block.timestamp);
+        uint256 matured = maturedValue[fund];
+        uint256[] storage q = _queue[fund];
+        for (uint256 h = queueHead[fund]; h < q.length && _due[q[h]] <= block.timestamp; ++h) {
+            Position storage p = positions[q[h]];
+            if (p.amount == 0 || p.folded) continue;
+            running -= int256(p.value0 * WAD) + int256(p.rate * (block.timestamp - p.t0));
+            matured += p.target;
+        }
+        return matured + (running > 0 ? uint256(running) / WAD : 0);
+    }
+
+    /// @dev Deposits and withdrawals fold matured claims first. Folding never
+    ///      changes totalAssets; it only keeps the view loop short.
+    function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal override {
+        _foldAll();
+        super._deposit(caller, receiver, assets, shares);
+    }
+
+    function _withdraw(address caller, address receiver, address owner_, uint256 assets, uint256 shares)
+        internal
+        override
+    {
+        _foldAll();
+        _ensureIdle(assets);
+        super._withdraw(caller, receiver, owner_, assets, shares);
     }
 
     /// @dev LP flows are paused while the vault's impairment flags disagree with the
@@ -305,12 +509,12 @@ contract Vault is ERC4626, ERC1155Holder, Ownable, ReentrancyGuard {
 
     function maxWithdraw(address owner_) public view override returns (uint256) {
         if (_lpLock() == 2) return 0;
-        return Math.min(super.maxWithdraw(owner_), idleUsdc());
+        return Math.min(super.maxWithdraw(owner_), idleUsdc() + sleeveValue());
     }
 
     function maxRedeem(address owner_) public view override returns (uint256) {
         if (_lpLock() == 2) return 0;
-        return Math.min(super.maxRedeem(owner_), _convertToShares(idleUsdc(), Math.Rounding.Floor));
+        return Math.min(super.maxRedeem(owner_), _convertToShares(idleUsdc() + sleeveValue(), Math.Rounding.Floor));
     }
 
     /// @notice USDC per one whole share, for display.
