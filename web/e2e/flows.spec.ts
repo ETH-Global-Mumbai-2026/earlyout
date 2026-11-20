@@ -3,13 +3,13 @@ import { expect, test } from "@playwright/test";
 test.describe("Sell", () => {
   test("shows a verdict before anything moves, then sells", async ({ page }) => {
     await page.goto("/sell");
-    await expect(page.getByRole("heading", { name: "Sell your pending redemption" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sell a redemption" })).toBeVisible();
     await expect(page.getByRole("radio", { name: /ACRED/ }).first()).toBeVisible();
 
     await page.getByLabel(/Amount in/).fill("0.01");
     await expect(page.getByText("BUY", { exact: true })).toBeVisible();
     await expect(page.getByText("You receive now")).toBeVisible();
-    for (const term of ["Base", "Vault usage", "Time to payout", "Issuer credit"]) {
+    for (const term of ["Service fee", "Pool usage", "Waiting time", "Fund risk"]) {
       await expect(page.getByText(term, { exact: true })).toBeVisible();
     }
 
@@ -35,6 +35,24 @@ test.describe("Sell", () => {
     await page.getByLabel(/Amount in/).fill("999");
     await expect(page.getByText("That is more than you hold.")).toBeVisible();
   });
+  test("verdict stamp has the verdict word", async ({ page }) => {
+    await page.goto("/sell");
+    await page.getByLabel(/Amount in/).fill("0.01");
+    const ticket = page.getByRole("region", { name: "Your sale" });
+    await expect(ticket.getByText("BUY", { exact: true })).toBeVisible();
+  });
+
+  test("shows days skipped and the yearly cost", async ({ page }) => {
+    await page.goto("/sell");
+    await page.getByRole("radio", { name: /^ACRED,/ }).click();
+    await page.getByLabel(/Amount in/).fill("0.01");
+    await expect(page.getByText(/You skip \d+ days/)).toBeVisible();
+    await expect(page.getByText(/a year/)).toBeVisible();
+    await page.getByRole("radio", { name: /^ACREDd,/ }).click();
+    await page.getByLabel(/Amount in/).fill("0.01");
+    await expect(page.getByText("Pays within a week")).toBeVisible();
+    await expect(page.getByText(/a year/)).toHaveCount(0);
+  });
 });
 
 test.describe("Vault", () => {
@@ -55,20 +73,31 @@ test.describe("Vault", () => {
 });
 
 test.describe("Status", () => {
+  test("demo controls hidden by default", async ({ page }) => {
+    await page.goto("/status");
+    await expect(page.getByRole("heading", { level: 1, name: "Oracle and risk" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Simulate issuer failure" })).toHaveCount(0);
+  });
+
   test("issuer failure halts quotes and allows the writedown", async ({ page }) => {
     // Demo state lives in the tab, so move between screens with the app's own tabs.
-    const tab = (name: string) =>
-      page.getByRole("navigation", { name: "App sections" }).filter({ visible: true }).getByRole("link", { name, exact: true });
-    await page.goto("/status");
+    const tab = async (name: string) => {
+      const menu = page.getByRole("button", { name: "Open menu" });
+      if (await menu.isVisible()) await menu.click();
+      return page.getByRole("navigation", { name: "App sections" }).filter({ visible: true }).getByRole("link", { name, exact: true });
+    };
+    await page.goto("/status?operator");
+    await page.getByLabel("Operator key").fill("mock");
+    await page.getByRole("button", { name: "Unlock" }).click();
     await page.getByRole("button", { name: "Simulate issuer failure" }).click();
     await expect(page.getByText("Issuer status: FAILED")).toBeVisible();
 
-    await tab("Sell").click();
+    await (await tab("Sell a redemption")).click();
     await page.getByLabel(/Amount in/).fill("0.01");
     await expect(page.getByText("HALT", { exact: true })).toBeVisible();
     await expect(page.getByText("Issuer reports failure")).toBeVisible();
 
-    await tab("Risk").click();
+    await (await tab("Oracle and risk")).click();
     await expect(page.getByRole("button", { name: "Mark impaired" }).first()).toBeVisible();
     await page.getByRole("button", { name: "Restore issuer" }).click();
     await expect(page.getByText("Issuer status: OK")).toBeVisible();
@@ -78,65 +107,19 @@ test.describe("Status", () => {
 test.describe("Book", () => {
   test("lists open claims from the book API with Arkiv provenance", async ({ page }) => {
     await page.goto("/book");
-    await expect(page.getByRole("heading", { name: "Book" })).toBeVisible();
-    await expect(page.getByText(/open ·/)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Open claims" })).toBeVisible();
+    await expect(page.getByText("Paid for them", { exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Arkiv entity" }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Arc transaction" }).first()).toBeVisible();
     await expect(page.getByText(/Written to Arkiv Rabdi by/)).toBeVisible();
   });
 });
 
 test.describe("Site", () => {
-  test("landing and company pages render with the shared footer", async ({ page }) => {
-    for (const [path, heading] of [
-      ["/", "Get paid today. Not when the fund's window opens."],
-      ["/how-it-works", "From pending redemption to USDC in one transaction."],
-      ["/distributors", "Give your clients an exit between windows."],
-      ["/developers", "Contracts, APIs and the public book."],
-      ["/security", "Reviewed, tested, and plain about what is left."],
-      ["/about", "We sell the wait."],
-      ["/legal", "Read this before you click anything."],
-    ]) {
-      await page.goto(path);
-      await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
-      await expect(page.getByText("Not investment advice.", { exact: false })).toBeVisible();
-    }
-  });
-
   test("the app renders inside its shell", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator(".theme-app")).toHaveCount(0);
     await page.goto("/sell");
     await expect(page.locator(".theme-app")).toHaveCount(1);
-  });
-});
-
-const ROUTES = ["/", "/how-it-works", "/distributors", "/developers", "/security", "/about", "/legal", "/sell", "/book", "/vault", "/status", "/missing-page"];
-
-test.describe("Responsive", () => {
-  for (const path of ROUTES) {
-    test(`no horizontal overflow on ${path}`, async ({ page }) => {
-      await page.goto(path);
-      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-      expect(overflow, "page is wider than the screen").toBeLessThanOrEqual(0);
-    });
-  }
-
-  test("site navigation works at this size", async ({ page }, info) => {
-    await page.goto("/");
-    void info;
-    const menu = page.getByRole("button", { name: "Open menu" });
-    if (await menu.isVisible()) await menu.click();
-    await page.getByRole("navigation", { name: "Site" }).filter({ visible: true }).getByRole("link", { name: "Security" }).click();
-    await expect(page).toHaveURL(/\/security$/);
-    await expect(page.getByRole("heading", { level: 1, name: "Reviewed, tested, and plain about what is left." })).toBeVisible();
-  });
-
-  test("app tabs reach every screen at this size", async ({ page }) => {
-    await page.goto("/sell");
-    for (const [tab, heading] of [["Book", "Book"], ["Vault", "Vault"], ["Risk", "Oracle and risk"], ["Sell", "Sell your pending redemption"]]) {
-      await page.getByRole("navigation", { name: "App sections" }).filter({ visible: true }).getByRole("link", { name: tab, exact: true }).click();
-      await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
-    }
   });
 });

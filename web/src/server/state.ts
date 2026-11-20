@@ -3,8 +3,8 @@ import type { Address, Hex } from "viem";
 import { createPublicClient, erc20Abi as viemErc20, http } from "viem";
 import { arcTestnet, USDC_ADDRESS } from "@/lib/chain";
 import { addresses } from "@/lib/addresses";
-import { erc20Abi, issuerAbi, oracleAbi, registryAbi, vaultAbi } from "@/lib/abi";
-import type { Account, Fund, Quote, VaultState, Verdict } from "@/lib/types";
+import { claimTokenAbi, erc20Abi, issuerAbi, oracleAbi, registryAbi, vaultAbi, wrapperAbi } from "@/lib/abi";
+import type { Account, ClaimPosition, Fund, Holding, Quote, VaultState, Verdict } from "@/lib/types";
 import { roundUpToWindow } from "@/lib/types";
 import { serverEnv } from "./env";
 
@@ -157,15 +157,16 @@ export function readAccount(address: Address, fresh = false): Promise<Account> {
 async function accountUncached(address: Address): Promise<Account> {
   const { funds } = await readState();
   const v = addresses.vault;
-  const [usdc, shares, maxWithdraw, maxDeposit, ...balances] = await Promise.all([
+  const [usdc, shares, maxWithdraw, maxDeposit, claimAllowlisted, ...balances] = await Promise.all([
     client.readContract({ address: USDC_ADDRESS, abi: viemErc20, functionName: "balanceOf", args: [address] }),
     client.readContract({ address: v, abi: vaultAbi, functionName: "balanceOf", args: [address] }),
     client.readContract({ address: v, abi: vaultAbi, functionName: "maxWithdraw", args: [address] }),
     client.readContract({ address: v, abi: vaultAbi, functionName: "maxDeposit", args: [address] }),
+    addresses.claims ? client.readContract({ address: addresses.claims, abi: claimTokenAbi, functionName: "allowlisted", args: [address] }) : Promise.resolve(false),
     ...funds.map((f) => client.readContract({ address: f.address, abi: viemErc20, functionName: "balanceOf", args: [address] })),
   ]);
   const sharesValue = shares === 0n ? 0n : await client.readContract({ address: v, abi: vaultAbi, functionName: "convertToAssets", args: [shares] });
-  return { address, usdc, fundBalances: Object.fromEntries(funds.map((f, i) => [f.address, balances[i]])), shares, sharesValue, maxWithdraw, maxDeposit };
+  return { address, usdc, fundBalances: Object.fromEntries(funds.map((f, i) => [f.address, balances[i]])), shares, sharesValue, maxWithdraw, maxDeposit, claimAllowlisted };
 }
 
 /// Only tokens and spenders the app itself uses, so the route cannot be used as a general RPC.
@@ -210,4 +211,73 @@ export function readIssuerFailed(fresh = false): Promise<boolean> {
     });
   issuerCache = { at: Date.now(), value };
   return value;
+}
+
+/// The vault's position in one claim, priced for a buyer. The buy price is the
+/// Vault's own buyPrice(): NAV minus the time and credit terms for the time left.
+export async function readClaimPosition(claimId: bigint, amount?: bigint): Promise<ClaimPosition> {
+  const v = addresses.vault;
+  const w = addresses.wrapper;
+  const { funds } = await readState();
+  const [[held, cost], fund, settleAt] = await Promise.all([
+    client.readContract({ address: v, abi: vaultAbi, functionName: "positions", args: [claimId] }),
+    client.readContract({ address: w, abi: wrapperAbi, functionName: "claimFund", args: [claimId] }),
+    client.readContract({ address: w, abi: wrapperAbi, functionName: "claimSettleAt", args: [claimId] }),
+  ]);
+  const t = funds.find((f) => f.address.toLowerCase() === fund.toLowerCase());
+  if (!t) throw new Error("Fund not listed");
+  const units = amount && amount > 0n && amount <= held ? amount : held;
+  const [price, q] = units > 0n
+    ? await Promise.all([
+        client.readContract({ address: v, abi: vaultAbi, functionName: "buyPrice", args: [claimId, units] }),
+        client.readContract({ address: v, abi: vaultAbi, functionName: "quote", args: [claimId, units] }),
+      ])
+    : [0n, null];
+  // Mirrors Vault.buy: only HALT blocks a buy (a sell-side REFUSE such as a full
+  // fund cap does not), and the claim must not be due yet (AlreadyDue).
+  const due = Number(settleAt) <= Math.floor(Date.now() / 1000);
+  const [verdict, reason]: [Verdict, string] = !q
+    ? ["REFUSE", "Nothing left to buy"]
+    : q.verdict === 2
+      ? ["HALT", q.reason]
+      : due
+        ? ["REFUSE", "Payout already due"]
+        : ["BUY", ""];
+  return {
+    claimId,
+    fund: t.address,
+    symbol: t.symbol,
+    settleAt: Number(settleAt),
+    held,
+    cost,
+    nav: t.nav,
+    timeBps: q ? q.timeBps : 0,
+    creditBps: t.creditBps,
+    amount: units,
+    price,
+    value: (units * t.nav) / 10n ** 30n,
+    verdict,
+    reason,
+  };
+}
+
+/// Claims a wallet holds: every claim id the book knows, checked on chain in one multicall.
+export async function readHoldings(address: Address, known: { claimId: string; fund: Address; symbol: string; settleAt: number; nav: string }[]): Promise<Holding[]> {
+  if (known.length === 0) return [];
+  const claims = addresses.claims;
+  const balances = await Promise.all(
+    known.map((k) => client.readContract({ address: claims, abi: claimTokenAbi, functionName: "balanceOf", args: [address, BigInt(k.claimId)] })),
+  );
+  const held = known.map((k, i) => ({ k, amount: balances[i] })).filter((x) => x.amount > 0n);
+  const collected = await Promise.all(held.map((x) => client.readContract({ address: addresses.wrapper, abi: wrapperAbi, functionName: "isCollected", args: [BigInt(x.k.claimId)] })));
+  return held.map((x, i) => ({
+    claimId: BigInt(x.k.claimId),
+    fund: x.k.fund,
+    symbol: x.k.symbol,
+    settleAt: x.k.settleAt,
+    amount: x.amount,
+    nav: BigInt(x.k.nav),
+    collected: collected[i],
+    value: (x.amount * BigInt(x.k.nav)) / 10n ** 30n,
+  }));
 }

@@ -31,6 +31,12 @@ export function fmtBps(bps: number) {
   return `${(bps / 100).toFixed(2)}%`;
 }
 
+/// A price term taken off the fund price: "−3.98%", or a plain "0.00%" when
+/// nothing is taken, so a zero never reads as a deduction.
+export function fmtCut(bps: number) {
+  return bps === 0 ? fmtBps(0) : `−${fmtBps(bps)}`;
+}
+
 export function fmtDate(unixSeconds: number) {
   return new Date(unixSeconds * 1000).toLocaleString("en-GB", {
     day: "numeric",
@@ -39,6 +45,11 @@ export function fmtDate(unixSeconds: number) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+/// Date only: "12 Feb 2027".
+export function fmtDay(unixSeconds: number) {
+  return new Date(unixSeconds * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
 export function timeAgo(unixSeconds: number, now = Date.now() / 1000) {

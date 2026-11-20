@@ -1,7 +1,8 @@
 import type { Address, Hex } from "viem";
 import { keccak256, encodeAbiParameters, parseAbiParameters } from "viem";
-import type { Account, Fund, Receipt, Source, VaultState, Verdict } from "../types";
+import type { Account, ClaimPosition, Fund, Holding, Receipt, Source, VaultState, Verdict } from "../types";
 import { roundUpToWindow } from "../types";
+import { mockBook } from "./mockBook";
 
 /// In-memory stand-in for the Arc contracts. Same formulas as Vault.sol, so
 /// the screens can be exercised without a chain. Opt-in via NEXT_PUBLIC_MODE=mock.
@@ -42,7 +43,7 @@ const state = {
   issuerFailed: false,
   idle: 100_000_000n,
   totalSupply: 100_000_000n * 10n ** 3n,
-  user: { usdc: 250_000_000n, shares: 0n, balances: {} as Record<string, bigint> },
+  user: { usdc: 250_000_000n, shares: 0n, balances: {} as Record<string, bigint>, claims: {} as Record<string, bigint> },
   nonce: 1,
 };
 for (const f of state.funds) state.user.balances[f.address] = 2n * 10n ** 18n;
@@ -144,6 +145,7 @@ export const mockSource: Source = {
       sharesValue,
       maxWithdraw: sharesValue < state.idle ? sharesValue : state.idle,
       maxDeposit: 2n ** 200n,
+      claimAllowlisted: true,
     };
   },
   async issuerFailed() {
@@ -195,7 +197,92 @@ export const mockSource: Source = {
     f.impaired = true;
     return { hash: fakeHash() };
   },
+
+  async claimPosition(claimId, amount): Promise<ClaimPosition> {
+    await delay(80);
+    const pos = mockPosition(claimId);
+    const f = state.funds.find((x) => x.address === pos.fund)!;
+    const now = Math.floor(Date.now() / 1000);
+    const secs = Math.max(0, pos.settleAt - now);
+    const timeBps = Number((BigInt(f.volBps) * sqrt((BigInt(secs) * 10n ** 18n) / BigInt(YEAR))) / 10n ** 9n);
+    const units = amount && amount > 0n && amount <= pos.held ? amount : pos.held;
+    const value = (units * f.nav) / 10n ** 30n;
+    const spread = BigInt(timeBps + f.creditBps);
+    const price = spread >= BPS ? 0n : (value * (BPS - spread)) / BPS;
+    const halted = state.issuerFailed || f.impaired;
+    const due = pos.settleAt <= now;
+    return {
+      claimId,
+      fund: f.address,
+      symbol: f.symbol,
+      settleAt: pos.settleAt,
+      held: pos.held,
+      cost: pos.cost,
+      nav: f.nav,
+      timeBps,
+      creditBps: f.creditBps,
+      amount: units,
+      price,
+      value,
+      verdict: halted ? "HALT" : units === 0n || due ? "REFUSE" : "BUY",
+      reason: halted ? (state.issuerFailed ? "Issuer reports failure" : "Fund is impaired") : units === 0n ? "Nothing left to buy" : due ? "Payout already due" : "",
+    };
+  },
+  async buy(claimId, amount, maxCost): Promise<Receipt> {
+    await delay(900);
+    const p = await this.claimPosition(claimId, amount);
+    if (p.verdict !== "BUY") throw new Error(`${p.verdict}: ${p.reason}`);
+    if (p.price > maxCost) throw new Error("Price moved above your maximum");
+    if (state.user.usdc < p.price) throw new Error("Not enough USDC");
+    const pos = mockPosition(claimId);
+    const costShare = (pos.cost * amount) / pos.held;
+    pos.held -= amount;
+    pos.cost -= costShare;
+    const f = state.funds.find((x) => x.address === pos.fund)!;
+    f.deployedUsdc = f.deployedUsdc > costShare ? f.deployedUsdc - costShare : 0n;
+    state.idle += p.price;
+    state.user.usdc -= p.price;
+    state.user.claims[claimId.toString()] = (state.user.claims[claimId.toString()] ?? 0n) + amount;
+    return { hash: fakeHash(), claimId, payout: p.price };
+  },
+  async holdings(): Promise<Holding[]> {
+    await delay(60);
+    return Object.entries(state.user.claims)
+      .filter(([, amount]) => amount > 0n)
+      .map(([id, amount]) => {
+        const pos = mockPosition(BigInt(id));
+        const f = state.funds.find((x) => x.address === pos.fund)!;
+        return { claimId: BigInt(id), fund: f.address, symbol: f.symbol, settleAt: pos.settleAt, amount, nav: f.nav, collected: false, value: (amount * f.nav) / 10n ** 30n };
+      });
+  },
+  async redeem(claimId, amount): Promise<Receipt> {
+    await delay(900);
+    const pos = mockPosition(claimId);
+    if (pos.settleAt > Math.floor(Date.now() / 1000)) throw new Error("Not due yet");
+    const held = state.user.claims[claimId.toString()] ?? 0n;
+    if (held < amount) throw new Error("More than you hold");
+    const f = state.funds.find((x) => x.address === pos.fund)!;
+    const paid = (amount * f.nav) / 10n ** 30n;
+    state.user.claims[claimId.toString()] = held - amount;
+    state.user.usdc += paid;
+    return { hash: fakeHash(), claimId, payout: paid };
+  },
 };
+
+/// The vault's positions in mock mode: the claims the mock book lists, with the
+/// same ids, sizes, funds and payout dates, so the Buy screen and the book agree.
+const positions = new Map<string, { fund: Address; settleAt: number; held: bigint; cost: bigint }>();
+function mockPosition(claimId: bigint) {
+  const key = claimId.toString();
+  let p = positions.get(key);
+  if (!p) {
+    const c = mockBook().claims.find((x) => BigInt(x.claimId) === claimId);
+    if (!c) throw new Error("Unknown claim");
+    p = { fund: c.fund as Address, settleAt: c.settleAt, held: BigInt(c.amount), cost: BigInt(c.usdcPaid) };
+    positions.set(key, p);
+  }
+  return p;
+}
 
 /// Demo switch, used by the status API route in mock mode.
 export function setMockIssuerFailed(v: boolean) {

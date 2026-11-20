@@ -1,20 +1,25 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { AppTopBar } from "./app/AppTopBar";
+import { Sidebar } from "./app/Sidebar";
 import { ConfigNotice } from "./ConfigNotice";
-import { RiskStrip } from "./RiskStrip";
-import { Toolbar } from "./Toolbar";
+import { OperatorDialog } from "./app/DemoGate";
 
-/// The app frame: translucent header, a strip of live figures, a roomy workspace.
+/// The app frame: a sidebar grouped by audience, a top bar with the live
+/// market strip and the wallet, then the screen.
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div className="theme-app">
-      <Toolbar />
-      <RiskStrip />
-      <main className="mx-auto w-full max-w-[1240px] px-4 pb-28 pt-10 sm:px-6 sm:pb-16">
-        <ConfigNotice />
-        {children}
-      </main>
+    <div className="theme-app flex min-h-dvh">
+      <Sidebar />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <AppTopBar />
+        <main className="mx-auto w-full max-w-[1240px] px-4 pb-20 pt-8 sm:px-6 sm:pt-10">
+          <ConfigNotice />
+          {children}
+        </main>
+      </div>
+      <OperatorDialog />
     </div>
   );
 }

@@ -12,8 +12,10 @@ export default defineConfig({
   reporter: process.env.CI ? "github" : "list",
   use: { baseURL, trace: "retain-on-failure" },
   projects: [
+    { name: "small", use: { ...devices["Desktop Chrome"], viewport: { width: 360, height: 740 }, isMobile: true, hasTouch: true } },
     { name: "phone", use: { ...devices["iPhone 14"] } },
     { name: "tablet", use: { ...devices["iPad (gen 7)"] } },
+    { name: "laptop", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } } },
     { name: "desktop", use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 } } },
   ],
   webServer: process.env.E2E_BASE_URL

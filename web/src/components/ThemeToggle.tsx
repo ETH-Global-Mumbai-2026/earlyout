@@ -10,6 +10,11 @@ function subscribe(cb: () => void) {
 }
 const isDark = () => document.documentElement.classList.contains("dark");
 
+/// True while the page is in dark mode; follows the toggle live.
+export function useIsDark() {
+  return useSyncExternalStore(subscribe, isDark, () => false);
+}
+
 /// Light or dark. Starts from the system setting; an explicit choice is kept.
 export function ThemeToggle({ className = "" }: { className?: string }) {
   const dark = useSyncExternalStore(subscribe, isDark, () => false);
@@ -26,9 +31,9 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
       onClick={flip}
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
       title={dark ? "Light mode" : "Dark mode"}
-      className={`pressable grid size-9 place-items-center rounded-full text-ink-2 hover:bg-sunk ${className}`}
+      className={`pressable grid size-8 place-items-center rounded-[6px] border border-hairline text-ink-2 hover:bg-sunk ${className}`}
     >
-      {dark ? <Sun size={18} aria-hidden /> : <Moon size={18} aria-hidden />}
+      {dark ? <Sun size={16} aria-hidden /> : <Moon size={16} aria-hidden />}
     </button>
   );
 }

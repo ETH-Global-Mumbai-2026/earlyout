@@ -5,6 +5,14 @@ const nextConfig: NextConfig = {
   cacheComponents: false,
   reactStrictMode: true,
   poweredByHeader: false,
+  async redirects() {
+    return [
+      { source: "/how-it-works", destination: "/holders", permanent: true },
+      { source: "/distributors", destination: "/platforms", permanent: true },
+      { source: "/developers", destination: "/docs", permanent: true },
+      { source: "/about", destination: "/company", permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { TERM_LABELS } from "@/lib/copy";
 
 /// Width of an element, tracked with ResizeObserver, so charts draw in real pixels
 /// (text never stretches) and reflow from phone to desktop.
@@ -22,7 +23,7 @@ export function useWidth<T extends HTMLElement>() {
 export const TERM_COLORS = ["var(--color-viz-1)", "var(--color-viz-2)", "var(--color-viz-3)", "var(--color-viz-4)"] as const;
 /// Text set inside a filled block: white on blue and orange, near-black on aqua and yellow.
 export const TERM_INK = ["#ffffff", "#ffffff", "#ffffff", "#ffffff"] as const;
-export const TERM_NAMES = ["Base", "Vault usage", "Time to payout", "Issuer credit"] as const;
+export const TERM_NAMES = TERM_LABELS;
 
 /// Value first, label second; a short line key in the series colour.
 export function Tooltip({ x, y, children, align = "center" }: { x: number; y: number; children: ReactNode; align?: "center" | "left" | "right" }) {
@@ -30,7 +31,7 @@ export function Tooltip({ x, y, children, align = "center" }: { x: number; y: nu
   return (
     <div
       role="status"
-      className="material pointer-events-none absolute z-10 whitespace-nowrap rounded-lg border border-hairline px-2.5 py-1.5 text-xs shadow-lg"
+      className="pointer-events-none absolute z-10 whitespace-nowrap rounded-[4px] border border-hairline bg-surface px-2.5 py-1.5 text-xs shadow-[var(--shadow-float)]"
       style={{ left: x, top: y, transform: `translate(${shift}, calc(-100% - 8px))` }}
     >
       {children}

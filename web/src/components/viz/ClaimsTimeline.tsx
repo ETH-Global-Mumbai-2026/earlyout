@@ -33,7 +33,7 @@ export function ClaimsTimeline({ claims, now, className }: { claims: Claim[]; no
             {ticks.map((t, i) => (
               <g key={t}>
                 <line x1={sx(t)} x2={sx(t)} y1={pad.t} y2={height - pad.b} stroke="var(--color-hairline)" />
-                <text x={sx(t)} y={height - 8} textAnchor={i === 0 ? "start" : "middle"} className="fill-muted text-[11px] tnum">
+                <text x={sx(t)} y={height - 8} textAnchor={i === 0 ? "start" : "middle"} className="fill-muted font-mono text-[10px] tnum">
                   {i === 0 ? "today" : new Date(t * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                 </text>
               </g>
@@ -70,7 +70,7 @@ export function ClaimsTimeline({ claims, now, className }: { claims: Claim[]; no
         )}
         {hovered && width > 0 && (
           <Tooltip x={sx(hovered.settleAt)} y={pad.t + lanes.indexOf(hovered.symbol) * laneH + 8} align={sx(hovered.settleAt) > width * 0.7 ? "right" : "center"}>
-            <div className="font-semibold text-ink tnum">{fmtUsdc(BigInt(hovered.usdcPaid))} paid</div>
+            <div className="font-medium text-ink tnum">{fmtUsdc(BigInt(hovered.usdcPaid))} paid</div>
             <div className="text-muted">
               {fmtUnits(BigInt(hovered.amount))} {hovered.symbol} · pays {fmtDate(hovered.settleAt)}
             </div>

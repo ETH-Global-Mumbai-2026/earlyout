@@ -4,7 +4,7 @@ import { getAccount, switchChain, writeContract } from "wagmi/actions";
 import { arcTestnet, USDC_ADDRESS, wagmiConfig } from "../chain";
 import { addresses } from "../addresses";
 import { vaultAbi, wrapperAbi } from "../abi";
-import type { Account, Fund, Quote, Receipt, Source, VaultState } from "../types";
+import type { Account, ClaimPosition, Fund, Holding, Quote, Receipt, Source, VaultState } from "../types";
 import { fromWire } from "../wire";
 
 const cfg = wagmiConfig;
@@ -156,5 +156,55 @@ export const chainSource: Source = {
     requireAccount();
     const { hash } = await send(() => writeContract(cfg, { chainId,  address: addresses.vault, abi: vaultAbi, functionName: "markImpaired", args: [fund] }));
     return { hash };
+  },
+
+  async claimPosition(claimId, amount): Promise<ClaimPosition> {
+    const a = amount !== undefined ? `&amount=${amount}` : "";
+    return getJson<ClaimPosition>(`/api/claim?id=0x${claimId.toString(16)}${a}`);
+  },
+
+  /// Buy part of a claim the vault holds: USDC to the vault, the claim to the buyer.
+  async buy(claimId, amount, maxCost): Promise<Receipt> {
+    const me = requireAccount();
+    await ensureChain();
+    await ensureAllowance(USDC_ADDRESS, me, addresses.vault, maxCost);
+    const { hash, receipt } = await send(() => writeContract(cfg, { chainId, address: addresses.vault, abi: vaultAbi, functionName: "buy", args: [claimId, amount, maxCost] }));
+    let payout: bigint | undefined;
+    for (const log of receipt.logs) {
+      if (log.address.toLowerCase() !== addresses.vault.toLowerCase()) continue;
+      try {
+        const ev = decodeEventLog({ abi: vaultAbi, data: log.data, topics: log.topics });
+        if (ev.eventName === "ClaimBought") payout = ev.args.usdcCost;
+      } catch {
+        /* not ours */
+      }
+    }
+    return { hash, claimId, payout };
+  },
+
+  async holdings(address): Promise<Holding[]> {
+    return getJson<Holding[]>(`/api/holdings?address=${address}`);
+  },
+
+  /// At the payout date: collect from the issuer if nobody has yet, then burn the
+  /// claim units for their share of the USDC.
+  async redeem(claimId, amount): Promise<Receipt> {
+    requireAccount();
+    await ensureChain();
+    const holdings = await getJson<Holding[]>(`/api/holdings?address=${requireAccount()}`);
+    const h = holdings.find((x) => x.claimId === claimId);
+    if (h && !h.collected) await send(() => writeContract(cfg, { chainId, address: addresses.wrapper, abi: wrapperAbi, functionName: "collect", args: [claimId] }));
+    const { hash, receipt } = await send(() => writeContract(cfg, { chainId, address: addresses.wrapper, abi: wrapperAbi, functionName: "redeem", args: [claimId, amount] }));
+    let payout: bigint | undefined;
+    for (const log of receipt.logs) {
+      if (log.address.toLowerCase() !== addresses.wrapper.toLowerCase()) continue;
+      try {
+        const ev = decodeEventLog({ abi: wrapperAbi, data: log.data, topics: log.topics });
+        if (ev.eventName === "ClaimRedeemed") payout = ev.args.usdcPaid;
+      } catch {
+        /* not ours */
+      }
+    }
+    return { hash, claimId, payout };
   },
 };

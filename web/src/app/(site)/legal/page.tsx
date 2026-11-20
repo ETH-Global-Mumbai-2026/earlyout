@@ -1,29 +1,47 @@
 import type { Metadata } from "next";
 import { PageHeader, Section } from "@/components/site/blocks";
+import { COPY } from "@/lib/copy";
 
-export const metadata: Metadata = { title: "Testnet notice" };
+const C = COPY.legal;
 
-const points: [string, string][] = [
-  ["Testnet only", "Every contract runs on Arc testnet and holds test USDC with no monetary value. Nothing here is a live financial product."],
-  ["Not investment advice", "Nothing on this site is an offer to buy or sell a security, or advice about any fund."],
-  ["Stand-ins", "The fund tokens, the issuer's redemption desk and the issuer status API are stand-ins built for the demo. ACRED is referenced as an example; its NAV is read from Chainlink's public feed."],
-  ["No affiliation", "Earlyout is not affiliated with, endorsed by or sponsored by Apollo, Securitize, Circle, Chainlink or Arkiv."],
-  ["Open source", "The code is MIT licensed and provided as is, without warranty of any kind."],
-  ["Data", "Wallet addresses you connect are read from public chains. Claims you sell are written to Arkiv, a public database, and expire on their payout date. We do not collect personal data."],
-];
+export const metadata: Metadata = { title: C.meta.title };
 
 export default function Legal() {
   return (
     <>
-      <PageHeader eyebrow="Testnet notice" title="Read this before you click anything." />
+      <PageHeader eyebrow={C.kicker} title={C.title} />
       <Section>
-        <div className="hairline-rows max-w-3xl">
-          {points.map(([t, d]) => (
-            <div key={t} className="py-5">
-              <h2 className="t-headline">{t}</h2>
-              <p className="t-body mt-2 text-muted">{d}</p>
+        <dl className="grid max-w-3xl border-y border-ink">
+          {C.points.map((p) => (
+            <div key={p.title} className="grid gap-1 border-b border-hairline py-5 last:border-b-0 sm:grid-cols-[12rem_1fr] sm:gap-6">
+              <dt className="text-[15px] font-medium text-ink">{p.title}</dt>
+              <dd className="text-[15px] leading-relaxed text-ink-2">{p.body}</dd>
             </div>
           ))}
+        </dl>
+      </Section>
+      <Section tint title={C.realTitle}>
+        <div className="overflow-x-auto border-y border-ink">
+          <table className="tbl min-w-[560px]" aria-label={C.realTitle}>
+            <thead>
+              <tr>
+                <th>Part</th>
+                <th>Status</th>
+                <th>Note</th>
+              </tr>
+            </thead>
+            <tbody>
+              {C.real.map((r) => (
+                <tr key={r.part}>
+                  <td className="!whitespace-normal text-ink">{r.part}</td>
+                  <td>
+                    <span className={`font-mono text-[11px] uppercase tracking-[0.08em] ${r.status === "Real" ? "text-buy" : "text-refuse"}`}>{r.status}</span>
+                  </td>
+                  <td className="!whitespace-normal text-ink-2">{r.note}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </Section>
     </>
