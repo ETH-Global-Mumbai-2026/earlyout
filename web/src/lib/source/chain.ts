@@ -1,7 +1,8 @@
-import type { Address, Hex } from "viem";
+import type { Abi, Address, Hex } from "viem";
 import { decodeEventLog, erc20Abi as viemErc20, maxUint256 } from "viem";
 import { getAccount, switchChain, writeContract } from "wagmi/actions";
 import { arcTestnet, USDC_ADDRESS, wagmiConfig } from "../chain";
+import { circleAccount, circleWrite } from "../circle/wallet";
 import { addresses } from "../addresses";
 import { vaultAbi, wrapperAbi } from "../abi";
 import type { Account, ClaimPosition, Fund, Holding, Quote, Receipt, Source, VaultState } from "../types";
@@ -11,13 +12,23 @@ const cfg = wagmiConfig;
 const chainId = arcTestnet.id;
 
 
+/// Every write goes through here: a signed-in Circle wallet sends it as a
+/// Circle challenge, otherwise the browser wallet signs it.
+function write(call: { chainId: number; address: Address; abi: Abi; functionName: string; args: readonly unknown[] }): Promise<Hex> {
+  if (circleAccount()) return circleWrite(call);
+  return writeContract(cfg, call as never); // the same typed call; wagmi's generics cannot follow it through this helper
+}
+
 function requireAccount(): Address {
+  const circle = circleAccount();
+  if (circle) return circle;
   const a = getAccount(cfg);
   if (!a.address) throw new Error("Connect a wallet first");
   return a.address;
 }
 
 async function ensureChain() {
+  if (circleAccount()) return; // Circle wallets live on Arc already
   const a = getAccount(cfg);
   if (a.chainId !== chainId) await switchChain(cfg, { chainId });
 }
@@ -54,7 +65,7 @@ async function send(write: () => Promise<Hex>): Promise<{ hash: Hex; receipt: Wi
 async function ensureAllowance(token: Address, owner: Address, spender: Address, amount: bigint) {
   const { allowance } = await getJson<{ allowance: bigint }>(`/api/account?address=${owner}&token=${token}&spender=${spender}`);
   if (allowance < amount) {
-    await send(() => writeContract(cfg, { chainId, address: token, abi: viemErc20, functionName: "approve", args: [spender, maxUint256] }));
+    await send(() => write({ chainId, address: token, abi: viemErc20, functionName: "approve", args: [spender, maxUint256] }));
   }
 }
 
@@ -120,7 +131,7 @@ export const chainSource: Source = {
     const me = requireAccount();
     await ensureChain();
     await ensureAllowance(fund, me, addresses.wrapper, amount);
-    const { hash, receipt } = await send(() => writeContract(cfg, { chainId,  address: addresses.wrapper, abi: wrapperAbi, functionName: "depositAndSell", args: [fund, amount, minPayout] }));
+    const { hash, receipt } = await send(() => write({ chainId,  address: addresses.wrapper, abi: wrapperAbi, functionName: "depositAndSell", args: [fund, amount, minPayout] }));
     let claimId: bigint | undefined;
     let payout: bigint | undefined;
     for (const log of receipt.logs) {
@@ -142,19 +153,19 @@ export const chainSource: Source = {
     const me = requireAccount();
     await ensureChain();
     await ensureAllowance(USDC_ADDRESS, me, addresses.vault, amount);
-    const { hash } = await send(() => writeContract(cfg, { chainId,  address: addresses.vault, abi: vaultAbi, functionName: "deposit", args: [amount, me] }));
+    const { hash } = await send(() => write({ chainId,  address: addresses.vault, abi: vaultAbi, functionName: "deposit", args: [amount, me] }));
     return { hash };
   },
 
   async withdraw(amount): Promise<Receipt> {
     const me = requireAccount();
-    const { hash } = await send(() => writeContract(cfg, { chainId,  address: addresses.vault, abi: vaultAbi, functionName: "withdraw", args: [amount, me, me] }));
+    const { hash } = await send(() => write({ chainId,  address: addresses.vault, abi: vaultAbi, functionName: "withdraw", args: [amount, me, me] }));
     return { hash };
   },
 
   async markImpaired(fund): Promise<Receipt> {
     requireAccount();
-    const { hash } = await send(() => writeContract(cfg, { chainId,  address: addresses.vault, abi: vaultAbi, functionName: "markImpaired", args: [fund] }));
+    const { hash } = await send(() => write({ chainId,  address: addresses.vault, abi: vaultAbi, functionName: "markImpaired", args: [fund] }));
     return { hash };
   },
 
@@ -168,7 +179,7 @@ export const chainSource: Source = {
     const me = requireAccount();
     await ensureChain();
     await ensureAllowance(USDC_ADDRESS, me, addresses.vault, maxCost);
-    const { hash, receipt } = await send(() => writeContract(cfg, { chainId, address: addresses.vault, abi: vaultAbi, functionName: "buy", args: [claimId, amount, maxCost] }));
+    const { hash, receipt } = await send(() => write({ chainId, address: addresses.vault, abi: vaultAbi, functionName: "buy", args: [claimId, amount, maxCost] }));
     let payout: bigint | undefined;
     for (const log of receipt.logs) {
       if (log.address.toLowerCase() !== addresses.vault.toLowerCase()) continue;
@@ -193,8 +204,8 @@ export const chainSource: Source = {
     await ensureChain();
     const holdings = await getJson<Holding[]>(`/api/holdings?address=${requireAccount()}`);
     const h = holdings.find((x) => x.claimId === claimId);
-    if (h && !h.collected) await send(() => writeContract(cfg, { chainId, address: addresses.wrapper, abi: wrapperAbi, functionName: "collect", args: [claimId] }));
-    const { hash, receipt } = await send(() => writeContract(cfg, { chainId, address: addresses.wrapper, abi: wrapperAbi, functionName: "redeem", args: [claimId, amount] }));
+    if (h && !h.collected) await send(() => write({ chainId, address: addresses.wrapper, abi: wrapperAbi, functionName: "collect", args: [claimId] }));
+    const { hash, receipt } = await send(() => write({ chainId, address: addresses.wrapper, abi: wrapperAbi, functionName: "redeem", args: [claimId, amount] }));
     let payout: bigint | undefined;
     for (const log of receipt.logs) {
       if (log.address.toLowerCase() !== addresses.wrapper.toLowerCase()) continue;
