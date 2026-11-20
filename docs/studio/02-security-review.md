@@ -1,5 +1,7 @@
 # Earlyout: security review
 
+> Update, 20 November 2026: the open High finding (LP gain sniping) is fixed with option 1, linear accrual. See `projectDocs/10-security.md` and `contracts/test/VaultAccrual.t.sol`. 81 tests pass.
+
 Scope: FundRegistry, NavOracle, IssuerStub, ClaimToken, ClaimWrapper, FundToken, Vault (plus IReceiver). Max-depth review: two independent reviews of the source, Slither across the project, and a Foundry run before and after the changes. Target chain: Arc Testnet.
 
 Result: 5 Medium findings fixed, 1 High finding open and waiting on your decision, the rest listed below and left as is. This is a best-effort automated review, not a substitute for an independent audit before any mainnet use.

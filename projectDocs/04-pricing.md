@@ -121,4 +121,4 @@ Derived figures in `web/src/lib/metrics.ts` (redesign branch, unit tested):
 
 ## Where the LP earns
 
-The vault pays `payout` and collects `value` (at the NAV current on collection day) at settlement. The difference, the spread, is LP profit, realised when `settle` runs. Until then the claim sits in `totalAssets()` at cost. Because the gain lands in one step, new deposits just before a settlement can capture part of it; see the open finding in [10-security.md](10-security.md).
+The vault pays `payout` and collects `value` (at the NAV current on collection day) at settlement. The difference, the spread, is LP profit. It accrues linearly inside `totalAssets()` from the sale to the payout date, so a deposit made just before a settlement gets no share of it; `settle` only books any NAV drift since purchase. See [10-security.md](10-security.md).

@@ -65,7 +65,7 @@ FundRegistry already holds its maximum of ten funds, so a new listing needs a ne
 Nothing in this repository settles claims automatically. After a claim's payout date someone must call:
 
 ```bash
-cast send 0x7A40b36b012DC19b1f42dd68C13F4daE312e2319 "settle(uint256)" <claimId> \
+cast send 0x19F0c2bEec4E3520F4C49c8B28CAa9eEb7972997 "settle(uint256)" <claimId> \
   --rpc-url https://rpc.testnet.arc.io --private-key $OPS_PRIVATE_KEY
 ```
 

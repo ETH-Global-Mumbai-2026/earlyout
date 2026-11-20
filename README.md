@@ -14,7 +14,7 @@ Built at ETHGlobal Mumbai 2026, from scratch.
 | Arc Studio project | https://studio.arc.io/app/b9396e35-441e-4180-9444-965d2ad5dc59 |
 | Repository | https://github.com/ETH-Global-Mumbai-2026/earlyout |
 | ETHGlobal showcase and demo video | https://ethglobal.com/showcase/earlyout-sa4m0 |
-| Vault contract | [`0x7A40b36b012DC19b1f42dd68C13F4daE312e2319`](https://explorer.testnet.arc.io/address/0x7A40b36b012DC19b1f42dd68C13F4daE312e2319) |
+| Vault contract | [`0x19F0c2bEec4E3520F4C49c8B28CAa9eEb7972997`](https://explorer.testnet.arc.io/address/0x19F0c2bEec4E3520F4C49c8B28CAa9eEb7972997) |
 | Example transaction | A sale paid in USDC in one transaction: [`0x12aefa…`](https://explorer.testnet.arc.io/tx/0x12aefa9df1553daadc4c026566387f0fdde7cf9af6a0153a5eac5e141973a5ee) |
 | Builders | Satyam Sharma: GitHub [@SatyamDev803](https://github.com/SatyamDev803), X [@Satyam_S1603](https://x.com/Satyam_S1603) · Dex: GitHub [@dexalien](https://github.com/dexalien), X [@dextroalien](https://x.com/dextroalien) · Shreyas Thakur: GitHub [@ShreyasThakur0809](https://github.com/ShreyasThakur0809), X [@Shreyas__Thakur](https://x.com/Shreyas__Thakur) |
 
@@ -32,7 +32,7 @@ Arc reviewers: every item Arc asks for is mapped in [Arc submission checklist](#
 
 1. A holder deposits a fund token. ClaimWrapper files the redemption with the issuer and mints an ERC-1155 claim for that fund and payout date.
 2. The holder sells the claim to the Vault and receives USDC in the same transaction.
-3. The Vault holds the claim at cost, or sells it to a buyer, and collects the full amount at settlement. Liquidity providers (LPs) fund the vault in USDC and earn the spread.
+3. The Vault holds the claim, its value accruing toward the payout date, or sells it to a buyer, and collects the full amount at settlement. Liquidity providers (LPs) fund the vault in USDC and earn the spread.
 4. NAV and issuer status arrive through NavOracle as Chainlink CRE reports. A failed issuer halts trading, and `markImpaired` writes that fund down inside `totalAssets()`, so every LP's share price falls in one transaction.
 5. Each sale is written to Arkiv as an entity that expires on its payout date. The Book screen reads only from Arkiv.
 
@@ -342,7 +342,7 @@ It runs `select().from(earlyout.claims).where(eq("status","open")).ownedBy(write
 | IssuerStub | [`0x2b492aD36D8BB7BA6341a06AF76f1614A9516Ebe`](https://explorer.testnet.arc.io/address/0x2b492aD36D8BB7BA6341a06AF76f1614A9516Ebe) | Stand-in issuer: queues redemptions, pays NAV after the delay |
 | ClaimToken | [`0x39006ed8b5a1f7c7cd7c6C33f522fF8C8e61B090`](https://explorer.testnet.arc.io/address/0x39006ed8b5a1f7c7cd7c6C33f522fF8C8e61B090) | ERC-1155 claims, allowlisted transfers |
 | ClaimWrapper | [`0xfc7E6ECF94e88E050c73733aC3cf03f831115952`](https://explorer.testnet.arc.io/address/0xfc7E6ECF94e88E050c73733aC3cf03f831115952) | deposit, depositAndSell, collect, redeem |
-| Vault | [`0x7A40b36b012DC19b1f42dd68C13F4daE312e2319`](https://explorer.testnet.arc.io/address/0x7A40b36b012DC19b1f42dd68C13F4daE312e2319) | quote, quoteFund, sell, buy, settle, markImpaired |
+| Vault | [`0x19F0c2bEec4E3520F4C49c8B28CAa9eEb7972997`](https://explorer.testnet.arc.io/address/0x19F0c2bEec4E3520F4C49c8B28CAa9eEb7972997) | quote, quoteFund, sell, buy, settle, markImpaired |
 | ACRED (stand-in) | [`0xCd5DE841b0f781A866cA6E978A19d6d5431683E2`](https://explorer.testnet.arc.io/address/0xCd5DE841b0f781A866cA6E978A19d6d5431683E2) | 90-day payout, 1-day window |
 | ACREDd (demo window) | [`0x8d9FF934E08DA9f8AEbF2280dAD218e8d176d06F`](https://explorer.testnet.arc.io/address/0x8d9FF934E08DA9f8AEbF2280dAD218e8d176d06F) | 15-minute payout, 5-minute window |
 | JAAA (stand-in) | [`0x7ED73c4653aCf10830f2c5811349bc1d6bF012e1`](https://explorer.testnet.arc.io/address/0x7ED73c4653aCf10830f2c5811349bc1d6bF012e1) | 7-day payout; NAV from its Chainlink feed |
@@ -402,7 +402,7 @@ Try it as a judge: open the [Sell](https://earlyout.vercel.app/sell) screen, con
 
 ## Honest limits
 
-- **Open finding, LP gain sniping (High, found by Arc Studio's review).** Claims sit in the vault at cost and the whole gain lands when `settle` runs, so capital that deposits just before a settlement and leaves right after takes a share of a gain earlier LPs funded. Reproduced in `docs/studio/poc/`. Accepted for the testnet demo, where the vault holds a few USDC. The fix before any real money is linear accrual of claim value to the payout date inside `totalAssets()`; the design is in `docs/studio/02-security-review.md`.
+- **Fixed: LP gain sniping (High, found by Arc Studio's review).** Claims used to sit in the vault at cost, so the whole gain landed when `settle` ran and late capital could take a share of it. Each claim's value now accrues linearly to its payout date inside `totalAssets()`, and the proof of concept is a passing test (`test_snipingNoLongerPays`). Details in `projectDocs/10-security.md`.
 - The CRE workflow is simulated with `--broadcast`, not deployed to the CRE network. Between simulations our ops wallet is the oracle forwarder and writes the same reports; while it is, it could overwrite a status with a same-timestamp report.
 - Settlement needs a keeper to call `settle` at maturity. Nothing settles on its own.
 - The demo controls on the Risk screen act on the stand-in issuer, testnet only, and need a demo key.

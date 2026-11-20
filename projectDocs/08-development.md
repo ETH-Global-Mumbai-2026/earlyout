@@ -65,8 +65,8 @@ forge build && cd ../web && pnpm check:abi
 Read-only calls against the live deployment are safe, for example:
 
 ```bash
-cast call 0x7A40b36b012DC19b1f42dd68C13F4daE312e2319 "totalAssets()(uint256)" --rpc-url https://rpc.testnet.arc.io
-cast call 0x7A40b36b012DC19b1f42dd68C13F4daE312e2319 \
+cast call 0x19F0c2bEec4E3520F4C49c8B28CAa9eEb7972997 "totalAssets()(uint256)" --rpc-url https://rpc.testnet.arc.io
+cast call 0x19F0c2bEec4E3520F4C49c8B28CAa9eEb7972997 \
   "quoteFund(address,uint256)((uint8,string,uint256,uint64,uint16,uint16,uint16,uint16,uint256,uint256))" \
   0x8d9FF934E08DA9f8AEbF2280dAD218e8d176d06F 1000000000000000 --rpc-url https://rpc.testnet.arc.io
 ```

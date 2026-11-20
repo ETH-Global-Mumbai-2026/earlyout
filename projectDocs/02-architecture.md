@@ -121,7 +121,7 @@ sequenceDiagram
   V-->>S: USDC payout, same transaction
   A->>A: poll /api/receipt until mined
   A->>K: POST /api/arkiv/sync {tx}: one Claims entity, expires at settleAt
-  Note over V: claim held at cost in totalAssets()
+  Note over V: claim value accrues to payout date in totalAssets()
   V->>W: settle(claimId) after settleAt, anyone may call
   W->>I: settle(fund, settleAt): pays amount x NAV in USDC
   W-->>V: redeem: pro-rata USDC for the vault's claims

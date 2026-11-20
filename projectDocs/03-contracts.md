@@ -131,7 +131,7 @@ Events: `ClaimMinted(claimId, fund, settleAt, owner, amount)` (on `depositAndSel
 
 ERC-4626 vault over USDC, name "Earlyout USDC Vault", symbol `eoUSDC`. Decimals offset 6 (`_decimalsOffset`), so shares have 12 decimals and a donation attack costs about 10^6 times what it could win.
 
-**State:** `positions[claimId] = {amount (18dp), cost (6dp)}`, `fundCost[fund]` (USDC deployed at cost), `impaired[fund]`, `deployedUsdc` (sum of costs).
+**State:** `positions[claimId] = {amount (18dp), cost (6dp), value0 (6dp), target (6dp), rate, t0, settleAt, folded}`, where the carried value runs linearly from `value0` at `t0` at `rate` until the payout date, then holds at `target` (value at purchase NAV) (`positionValue`). Per fund, running totals `accBase` and `accRate` hold the sum of unmatured lines, `maturedValue` the targets of folded positions, and a payout-date queue (`queueHead`) lets `fold(fund, maxSteps)` move matured claims out of the running totals; sales, buys, settlements, deposits and withdrawals fold up to 32 entries each. `fundCost[fund]` (USDC deployed at cost), `impaired[fund]`, `deployedUsdc` (sum of costs).
 
 ### Quote struct
 
@@ -223,13 +223,13 @@ When the oracle reports FAILED, quotes halt at once, but `totalAssets()` only dr
 
 - `deployedUsdc == sum(fundCost[f])` over listed funds, and each `fundCost[f]` equals the sum of `positions[id].cost` for that fund's claims. Every subtraction mirrors an earlier addition; `buy` removes `cost * amount / held` (rounded down).
 - A claim moves to the vault before USDC leaves it (`sell`), and USDC arrives before a claim leaves (`buy`).
-- `totalAssets()` changes in only five ways: USDC in or out, a sale at cost (neutral: idle falls, cost rises by the same amount), a buy above or below cost, a settlement (cost replaced by collected USDC), and impairment marking or clearing.
+- `totalAssets()` is idle USDC plus each open claim's carried value (or cost times `recoveryBps` for an impaired fund). It changes when USDC moves in or out, as time passes (carried values accrue toward the payout date), on a buy above or below the carried value, at settlement (carried value replaced by collected USDC, so only NAV drift moves it), and on impairment marking or clearing. A sale is neutral: idle falls and carried value rises by the same amount.
 - The `totalAssets` loop is bounded by `MAX_FUNDS = 10`.
 - Only listed fund tokens enter the wrapper; only the wrapper mints or burns claims; only allowlisted addresses hold transferred claims.
 
 ## Tests
 
-63 tests in `contracts/test/`, sharing setup in `Base.t.sol` (a `MockUSDC` with 6 decimals in `test/mocks/`).
+81 tests in `contracts/test/`, sharing setup in `Base.t.sol` (a `MockUSDC` with 6 decimals in `test/mocks/`).
 
 | File | Tests | Covers |
 |---|---|---|
@@ -274,7 +274,7 @@ From `contracts/deployments/arc-testnet.json` (block 71057910) and `contracts/de
 | IssuerStub | `0x2b492aD36D8BB7BA6341a06AF76f1614A9516Ebe` |
 | ClaimToken | `0x39006ed8b5a1f7c7cd7c6C33f522fF8C8e61B090` |
 | ClaimWrapper | `0xfc7E6ECF94e88E050c73733aC3cf03f831115952` |
-| Vault | `0x7A40b36b012DC19b1f42dd68C13F4daE312e2319` |
+| Vault | `0x19F0c2bEec4E3520F4C49c8B28CAa9eEb7972997` |
 | USDC | `0x3600000000000000000000000000000000000000` |
 
 | Fund token | Address |
