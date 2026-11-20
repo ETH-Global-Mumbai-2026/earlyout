@@ -346,6 +346,8 @@ Earlyout settles in USDC on Arc and uses four more Circle products. Each is live
 
 Proof on Arc testnet:
 - CCTP payout from Arc to Base Sepolia through the router: [`0x2f43…7f61`](https://explorer.testnet.arc.io/tx/0x2f433eadcca00e3cb381c3a436c8f830498abc4a403f11edfa65a20cc1247f61), minted on Base without Base gas.
+- CCTP from Base Sepolia to Arc for an LP: burn [`0x3846…4edc`](https://sepolia.basescan.org/tx/0x384618ff9f47d550e67677450155fd101418a5df4f6c2f0f32b93462daf94edc), forwarded mint on Arc [`0x6c13…b692`](https://explorer.testnet.arc.io/tx/0x6c13dbbbaa5bb8b87ec9bf6874ccf7b67fa589ffeb9cad6668f8e5a06674b692) (4.979226 USDC after the 0.020774 fee), then a vault deposit [`0xcd7f…9ef6`](https://explorer.testnet.arc.io/tx/0xcd7ff0b1b63e869357563b01dfe1fdcfe9a539d152b8e91ecc561411882e9ef6).
+- A sale from a Circle user-controlled wallet (smart account, PIN approval): [`0x3e0e…906a`](https://explorer.testnet.arc.io/tx/0x3e0e4bc4f0bc4e0a290bfd2f65fea60ea7eb967cb21f192887ee45379a99906a). Gas paid by Circle Gas Station's paymaster `0x03df76c8c30a88f424cf3cbbc36a1ca02763103b`; the wallet paid none.
 - USYC sleeve deployed and wired to the vault; subscribing waits for Circle to allowlist the sleeve.
 
 ## Contracts (Arc testnet, chain 5042002)
