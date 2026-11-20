@@ -86,6 +86,8 @@ Fix (20 November 2026, review option 1): each position carries a value that rise
 4. The Next.js server keeps `OPS_PRIVATE_KEY`, `ARKIV_WRITER_PRIVATE_KEY`, `DEMO_TOKEN` and `CRON_SECRET` secret.
 5. Chainlink's mainnet NAV feeds are correct, and the server reads them from an honest Ethereum RPC.
 
+Added for the Circle integrations: the ops wallet can point the USYC sleeve at any vault (`setVault`), so it is trusted with the sleeve's USYC as it is with the rest. A vault counts the sleeve only while the sleeve points back at it, so a repointed sleeve is never counted twice. If a redemption pays less than asked (a Teller fee), the vault pulls again, up to four times, and reverts with `SleeveShort` rather than underpay. The Teller's deposit price is about 0.01% below its redemption price, so each sweep costs that much once; the vault values USYC at the Teller's price, which steps once a day by about a day of Treasury yield. The payout router holds nothing between transactions and checks the seller's eligibility itself. The Circle API key stays on the server; the execute route only builds calls to Earlyout's own contracts, USDC and listed fund tokens, and every call still needs the user's PIN.
+
 ## Before mainnet
 
 From the review, the README and the code:

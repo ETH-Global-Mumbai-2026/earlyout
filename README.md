@@ -14,7 +14,7 @@ Built at ETHGlobal Mumbai 2026, from scratch.
 | Arc Studio project | https://studio.arc.io/app/b9396e35-441e-4180-9444-965d2ad5dc59 |
 | Repository | https://github.com/ETH-Global-Mumbai-2026/earlyout |
 | ETHGlobal showcase and demo video | https://ethglobal.com/showcase/earlyout-sa4m0 |
-| Vault contract | [`0x19F0c2bEec4E3520F4C49c8B28CAa9eEb7972997`](https://explorer.testnet.arc.io/address/0x19F0c2bEec4E3520F4C49c8B28CAa9eEb7972997) |
+| Vault contract | [`0xa788e038e7E5B36b9BF0b0DeDd582F8C130727d0`](https://explorer.testnet.arc.io/address/0xa788e038e7E5B36b9BF0b0DeDd582F8C130727d0) |
 | Example transaction | A sale paid in USDC in one transaction: [`0x12aefa…`](https://explorer.testnet.arc.io/tx/0x12aefa9df1553daadc4c026566387f0fdde7cf9af6a0153a5eac5e141973a5ee) |
 | Builders | Satyam Sharma: GitHub [@SatyamDev803](https://github.com/SatyamDev803), X [@Satyam_S1603](https://x.com/Satyam_S1603) · Dex: GitHub [@dexalien](https://github.com/dexalien), X [@dextroalien](https://x.com/dextroalien) · Shreyas Thakur: GitHub [@ShreyasThakur0809](https://github.com/ShreyasThakur0809), X [@Shreyas__Thakur](https://x.com/Shreyas__Thakur) |
 
@@ -333,6 +333,21 @@ It runs `select().from(earlyout.claims).where(eq("status","open")).ownedBy(write
 
 ---
 
+## Circle: USDC, CCTP, USYC and Wallets
+
+Earlyout settles in USDC on Arc and uses four more Circle products. Each is live on Arc testnet.
+
+| Product | What it does in Earlyout | Code |
+|---|---|---|
+| USDC | The vault's asset, every sale and every settlement, and gas on Arc | `contracts/src/Vault.sol` |
+| CCTP V2 with the Forwarding Service | A seller can get paid on Base or Ethereum in one transaction (`PayoutRouter.sellAndBridge`); an LP can bring USDC from Base or Ethereum to Arc and deposit it. Circle mints on the destination, so nobody needs gas there | `contracts/src/PayoutRouter.sol`, `web/src/lib/cctp.ts`, `web/src/lib/source/bridgeIn.ts`, `web/src/app/api/cctp/` |
+| USYC | Idle vault USDC earns Treasury yield. `UsycSleeve` is the one address that touches the Teller; the vault counts its value in `totalAssets()` and pulls cash back when a sale or withdrawal needs it | `contracts/src/UsycSleeve.sol`, `Vault.setSleeve`, `sweepToSleeve`, `pullFromSleeve` |
+| Wallets (user-controlled) and Gas Station | Sign in with a Circle wallet: no extension, a PIN in Circle's frame, a smart account on Arc whose gas Circle sponsors. Every app action routes through Circle challenges | `web/src/server/circle.ts`, `web/src/lib/circle/wallet.ts`, `web/src/app/api/circle/` |
+
+Proof on Arc testnet:
+- CCTP payout from Arc to Base Sepolia through the router: [`0x2f43…7f61`](https://explorer.testnet.arc.io/tx/0x2f433eadcca00e3cb381c3a436c8f830498abc4a403f11edfa65a20cc1247f61), minted on Base without Base gas.
+- USYC sleeve deployed and wired to the vault; subscribing waits for Circle to allowlist the sleeve.
+
 ## Contracts (Arc testnet, chain 5042002)
 
 | Contract | Address | Job |
@@ -342,7 +357,9 @@ It runs `select().from(earlyout.claims).where(eq("status","open")).ownedBy(write
 | IssuerStub | [`0x2b492aD36D8BB7BA6341a06AF76f1614A9516Ebe`](https://explorer.testnet.arc.io/address/0x2b492aD36D8BB7BA6341a06AF76f1614A9516Ebe) | Stand-in issuer: queues redemptions, pays NAV after the delay |
 | ClaimToken | [`0x39006ed8b5a1f7c7cd7c6C33f522fF8C8e61B090`](https://explorer.testnet.arc.io/address/0x39006ed8b5a1f7c7cd7c6C33f522fF8C8e61B090) | ERC-1155 claims, allowlisted transfers |
 | ClaimWrapper | [`0xfc7E6ECF94e88E050c73733aC3cf03f831115952`](https://explorer.testnet.arc.io/address/0xfc7E6ECF94e88E050c73733aC3cf03f831115952) | deposit, depositAndSell, collect, redeem |
-| Vault | [`0x19F0c2bEec4E3520F4C49c8B28CAa9eEb7972997`](https://explorer.testnet.arc.io/address/0x19F0c2bEec4E3520F4C49c8B28CAa9eEb7972997) | quote, quoteFund, sell, buy, settle, markImpaired |
+| PayoutRouter | [`0x9F6185C5291377d2D5e71bae604daF19068ec3b7`](https://explorer.testnet.arc.io/address/0x9F6185C5291377d2D5e71bae604daF19068ec3b7) | sellAndBridge: sell, then pay out on Base or Ethereum through Circle CCTP |
+| UsycSleeve | [`0x1457a5baaB6103E75FAA09fe7f4fA788F86c0277`](https://explorer.testnet.arc.io/address/0x1457a5baaB6103E75FAA09fe7f4fA788F86c0277) | Idle vault USDC held as USYC through Circle's Teller |
+| Vault | [`0xa788e038e7E5B36b9BF0b0DeDd582F8C130727d0`](https://explorer.testnet.arc.io/address/0xa788e038e7E5B36b9BF0b0DeDd582F8C130727d0) | quote, quoteFund, sell, buy, settle, markImpaired |
 | ACRED (stand-in) | [`0xCd5DE841b0f781A866cA6E978A19d6d5431683E2`](https://explorer.testnet.arc.io/address/0xCd5DE841b0f781A866cA6E978A19d6d5431683E2) | 90-day payout, 1-day window |
 | ACREDd (demo window) | [`0x8d9FF934E08DA9f8AEbF2280dAD218e8d176d06F`](https://explorer.testnet.arc.io/address/0x8d9FF934E08DA9f8AEbF2280dAD218e8d176d06F) | 15-minute payout, 5-minute window |
 | JAAA (stand-in) | [`0x7ED73c4653aCf10830f2c5811349bc1d6bF012e1`](https://explorer.testnet.arc.io/address/0x7ED73c4653aCf10830f2c5811349bc1d6bF012e1) | 7-day payout; NAV from its Chainlink feed |

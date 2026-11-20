@@ -274,7 +274,7 @@ From `contracts/deployments/arc-testnet.json` (block 71057910) and `contracts/de
 | IssuerStub | `0x2b492aD36D8BB7BA6341a06AF76f1614A9516Ebe` |
 | ClaimToken | `0x39006ed8b5a1f7c7cd7c6C33f522fF8C8e61B090` |
 | ClaimWrapper | `0xfc7E6ECF94e88E050c73733aC3cf03f831115952` |
-| Vault | `0x19F0c2bEec4E3520F4C49c8B28CAa9eEb7972997` |
+| Vault | `0xa788e038e7E5B36b9BF0b0DeDd582F8C130727d0` |
 | USDC | `0x3600000000000000000000000000000000000000` |
 
 | Fund token | Address |
@@ -307,3 +307,13 @@ Read from Arc testnet with `cast call` on 13 November 2026.
 | Original deployer (owns nothing) | `0xC9007Afa7c9eCd6b0D9da62e3B820f69F730aFf3`, a Circle developer-controlled wallet created by Arc Studio |
 
 Per-fund terms are in [04-pricing.md](04-pricing.md#parameters-per-fund).
+
+## PayoutRouter
+
+`0x9F6185C5291377d2D5e71bae604daF19068ec3b7`. Sells a pending redemption and pays the seller on another chain in one transaction. `sellAndBridge(fund, amount, minPayout, destinationDomain, recipient, maxFee)`: checks the seller is on the ClaimToken allowlist (the router itself is allowlisted, so it checks for the seller), pulls the fund tokens, calls `ClaimWrapper.depositAndSell` (the USDC payout lands in the router), then calls Circle's TokenMessengerV2 `depositForBurnWithHook` with the Forwarding Service hook (`cctp-forward`, v0) and finality 1000. Circle mints `payout - maxFee` to `recipient` on the destination. Reverts `NotAllowlisted`, `ZeroRecipient`, `FeeTooHigh` (payout not above the fee). Emits `PaidOut`. Holds nothing between transactions. Domains: Arc 26, Base 6, Ethereum 0.
+
+## UsycSleeve
+
+`0x1457a5baaB6103E75FAA09fe7f4fA788F86c0277`. Holds the vault's idle USDC as USYC through Circle's Teller (`0x9fdF14c5B14173D74C08Af27AebFf39240dC105A` on Arc testnet). It is the only address that touches the Teller, so it is the one address Circle allowlists, and it stays when the vault is redeployed (`setVault`, owner). Only the vault can `subscribe(amount)` or `withdrawUsdc(amount)` (redeems at least `amount`, or everything if worth less, and sends USDC to the vault). `value()` is USYC held at the Teller's `previewRedeem`.
+
+In the Vault: `setSleeve` (owner; the old sleeve must be empty), `sweepToSleeve` and `pullFromSleeve` (owner), `sleeveValue()`. `totalAssets()`, the "Vault short of USDC" check, `maxWithdraw` and `maxRedeem` count idle USDC plus the sleeve's value, and a sale or LP withdrawal pulls any shortfall from the sleeve before paying (repeating up to four times to cover a redemption fee, then `SleeveShort`). All of this counts the sleeve only while `sleeve.vault()` is this vault.
