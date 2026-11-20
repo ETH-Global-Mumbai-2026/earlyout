@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: C.meta.title };
 
 const proofs: [string, string, string][] = [
   ["Arc Studio project", "Contracts, security review and the deploy transactions.", STUDIO],
-  ["Vault on Arc", "The deployed Vault, owned by the ops wallet.", `${ARC_EXPLORER}/address/0x19F0c2bEec4E3520F4C49c8B28CAa9eEb7972997`],
+  ["Vault on Arc", "The deployed Vault, owned by the ops wallet.", `${ARC_EXPLORER}/address/0xa788e038e7E5B36b9BF0b0DeDd582F8C130727d0`],
   ["A real sale", "Fund tokens in, claim to the vault, USDC to the seller, one transaction.", `${ARC_EXPLORER}/tx/0x12aefa9df1553daadc4c026566387f0fdde7cf9af6a0153a5eac5e141973a5ee`],
   ["CRE workflow logs", "Broadcast runs: issuer OK, issuer failed and the halt, then restored.", `${REPO}/blob/main/cre/README.md`],
   ["Source code", "63 contract tests, end-to-end checks, MIT licence.", REPO],
@@ -69,7 +69,7 @@ export default function Docs() {
       </Section>
 
       <Section layout="split" title={C.terminal.title} lede={C.terminal.lede}>
-        <Code>{`cast call 0x19F0c2bEec4E3520F4C49c8B28CAa9eEb7972997 \\
+        <Code>{`cast call 0xa788e038e7E5B36b9BF0b0DeDd582F8C130727d0 \\
   "quoteFund(address,uint256)((uint8,string,uint256,uint64,uint16,uint16,uint16,uint16,uint256,uint256))" \\
   0x8d9FF934E08DA9f8AEbF2280dAD218e8d176d06F 1000000000000000 \\
   --rpc-url https://rpc.testnet.arc.io`}</Code>

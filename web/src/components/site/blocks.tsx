@@ -157,8 +157,10 @@ export function Code({ children }: { children: string }) {
 
 export const ARC_EXPLORER = "https://explorer.testnet.arc.io";
 export const contracts: [string, string, string][] = [
-  ["Vault", "0x19F0c2bEec4E3520F4C49c8B28CAa9eEb7972997", "ERC-4626 vault over USDC: quote, sell, buy, settle, markImpaired"],
+  ["Vault", "0xa788e038e7E5B36b9BF0b0DeDd582F8C130727d0", "ERC-4626 vault over USDC: quote, sell, buy, settle, markImpaired"],
   ["ClaimWrapper", "0xfc7E6ECF94e88E050c73733aC3cf03f831115952", "deposit, depositAndSell, collect, redeem"],
+  ["PayoutRouter", "0x9F6185C5291377d2D5e71bae604daF19068ec3b7", "Sell and get paid on another chain in one transaction, through Circle CCTP"],
+  ["UsycSleeve", "0x1457a5baaB6103E75FAA09fe7f4fA788F86c0277", "Holds the vault's idle USDC as USYC, Circle's tokenized Treasury fund"],
   ["ClaimToken", "0x39006ed8b5a1f7c7cd7c6C33f522fF8C8e61B090", "ERC-1155 claims, one id per fund and payout date"],
   ["NavOracle", "0xCd55924a73771d508887905473d93B981ac4A08b", "Chainlink Runtime Environment (CRE) receiver: NAV, time, issuer status"],
   ["FundRegistry", "0x634697188F17eC1064f6e9A0aE000a504983dCe4", "Listed funds and pricing terms"],
