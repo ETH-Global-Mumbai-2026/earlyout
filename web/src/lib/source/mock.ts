@@ -168,6 +168,12 @@ export const mockSource: Source = {
     );
     return { hash: fakeHash(), claimId, payout: q.payout };
   },
+  async sellAndBridge(fundAddr, amount, minPayout, to, maxFee): Promise<Receipt> {
+    const r = await this.sell(fundAddr, amount, minPayout);
+    // The USDC leaves for the other chain, so it is not in the Arc wallet.
+    state.user.usdc -= r.payout ?? 0n;
+    return { ...r, bridge: { to, maxFee } };
+  },
   async deposit(amount): Promise<Receipt> {
     await delay(700);
     if (amount > state.user.usdc) throw new Error("Not enough USDC");

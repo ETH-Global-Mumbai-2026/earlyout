@@ -3,12 +3,27 @@ import { decodeEventLog, erc20Abi as viemErc20, maxUint256 } from "viem";
 import { getAccount, switchChain, writeContract } from "wagmi/actions";
 import { arcTestnet, USDC_ADDRESS, wagmiConfig } from "../chain";
 import { circleAccount, circleWrite } from "../circle/wallet";
-import { addresses } from "../addresses";
-import { vaultAbi, wrapperAbi } from "../abi";
+import { addresses, payoutRouter } from "../addresses";
+import { CCTP_CHAINS, toBytes32 } from "../cctp";
+import { payoutRouterAbi, vaultAbi, wrapperAbi } from "../abi";
 import type { Account, ClaimPosition, Fund, Holding, Quote, Receipt, Source, VaultState } from "../types";
 import { fromWire } from "../wire";
 
 const cfg = wagmiConfig;
+
+/// The claim id and payout from the Vault's ClaimSold event in a sale receipt.
+function saleFromLogs(logs: readonly { address: Address; data: Hex; topics: readonly Hex[] }[]): { claimId?: bigint; payout?: bigint } {
+  for (const log of logs) {
+    if (log.address.toLowerCase() !== addresses.vault.toLowerCase()) continue;
+    try {
+      const ev = decodeEventLog({ abi: vaultAbi, data: log.data, topics: log.topics as [Hex, ...Hex[]] });
+      if (ev.eventName === "ClaimSold") return { claimId: ev.args.claimId, payout: ev.args.usdcPaid };
+    } catch {
+      /* not ours */
+    }
+  }
+  return {};
+}
 const chainId = arcTestnet.id;
 
 
@@ -132,21 +147,24 @@ export const chainSource: Source = {
     await ensureChain();
     await ensureAllowance(fund, me, addresses.wrapper, amount);
     const { hash, receipt } = await send(() => write({ chainId,  address: addresses.wrapper, abi: wrapperAbi, functionName: "depositAndSell", args: [fund, amount, minPayout] }));
-    let claimId: bigint | undefined;
-    let payout: bigint | undefined;
-    for (const log of receipt.logs) {
-      if (log.address.toLowerCase() !== addresses.vault.toLowerCase()) continue;
-      try {
-        const ev = decodeEventLog({ abi: vaultAbi, data: log.data, topics: log.topics });
-        if (ev.eventName === "ClaimSold") {
-          claimId = ev.args.claimId;
-          payout = ev.args.usdcPaid;
-        }
-      } catch {
-        /* not ours */
-      }
-    }
-    return { hash, claimId, payout };
+    return { hash, ...saleFromLogs(receipt.logs) };
+  },
+
+  async sellAndBridge(fund, amount, minPayout, to, maxFee): Promise<Receipt> {
+    if (!payoutRouter) throw new Error("Paying out to other chains is not set up");
+    const me = requireAccount();
+    await ensureChain();
+    await ensureAllowance(fund, me, payoutRouter, amount);
+    const { hash, receipt } = await send(() =>
+      write({
+        chainId,
+        address: payoutRouter!,
+        abi: payoutRouterAbi,
+        functionName: "sellAndBridge",
+        args: [fund, amount, minPayout, CCTP_CHAINS[to].domain, toBytes32(me), maxFee],
+      }),
+    );
+    return { hash, ...saleFromLogs(receipt.logs), bridge: { to, maxFee } };
   },
 
   async deposit(amount): Promise<Receipt> {

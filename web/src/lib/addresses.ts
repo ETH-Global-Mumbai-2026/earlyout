@@ -24,3 +24,6 @@ export const missingAddresses = (Object.keys(raw) as (keyof typeof raw)[]).filte
 export const configured = MODE === "mock" || missingAddresses.length === 0;
 
 export const addresses = raw as unknown as Addresses;
+
+/// Optional: the CCTP payout router. Without it, sellers are paid on Arc only.
+export const payoutRouter = isAddress(process.env.NEXT_PUBLIC_PAYOUT_ROUTER ?? "") ? (process.env.NEXT_PUBLIC_PAYOUT_ROUTER as Address) : undefined;

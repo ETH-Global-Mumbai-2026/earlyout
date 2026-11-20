@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getAddress, isAddress } from "viem";
 import { allow } from "@/server/limit";
 import { CircleError, circleConfigured, contractExecution } from "@/server/circle";
-import { addresses } from "@/lib/addresses";
+import { addresses, payoutRouter } from "@/lib/addresses";
 import { USDC_ADDRESS } from "@/lib/chain";
 import { readState } from "@/server/state";
 
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 /// key must not become a way to call anything on anyone's behalf.
 async function allowedContracts(): Promise<Set<string>> {
   const { funds } = await readState();
-  const list = [addresses.wrapper, addresses.vault, addresses.claims, USDC_ADDRESS, ...funds.map((f) => f.address)];
+  const list = [addresses.wrapper, addresses.vault, addresses.claims, USDC_ADDRESS, payoutRouter, ...funds.map((f) => f.address)];
   return new Set(list.filter((a): a is `0x${string}` => !!a).map((a) => a.toLowerCase()));
 }
 

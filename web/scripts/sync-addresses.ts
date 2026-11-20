@@ -25,6 +25,7 @@ const wanted: Record<string, string[]> = {
   NEXT_PUBLIC_CLAIM_TOKEN: ["claimtoken", "claims"],
   NEXT_PUBLIC_CLAIM_WRAPPER: ["claimwrapper", "wrapper"],
   NEXT_PUBLIC_VAULT: ["vault"],
+  NEXT_PUBLIC_PAYOUT_ROUTER: ["payoutrouter"],
 };
 
 const lines = existsSync(dst) ? readFileSync(dst, "utf8").split("\n") : [];

@@ -96,3 +96,8 @@ export const vaultAbi = parseAbi([
   "event ClaimSettled(uint256 indexed claimId, uint256 usdcCollected)",
   "event FundImpaired(address indexed fund)",
 ]);
+
+export const payoutRouterAbi = parseAbi([
+  "function sellAndBridge(address fund, uint256 amount, uint256 minPayout, uint32 destinationDomain, bytes32 recipient, uint256 maxFee) returns (uint256)",
+  "event PaidOut(address indexed seller, address indexed fund, uint256 claimId, uint256 amount, uint256 payout, uint32 destinationDomain, bytes32 recipient, uint256 maxFee)",
+]);
