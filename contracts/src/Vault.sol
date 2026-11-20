@@ -13,6 +13,7 @@ import {FundRegistry} from "./FundRegistry.sol";
 import {NavOracle} from "./NavOracle.sol";
 import {ClaimToken} from "./ClaimToken.sol";
 import {ClaimWrapper} from "./ClaimWrapper.sol";
+import {UsycSleeve} from "./UsycSleeve.sol";
 
 /// @notice USDC vault that buys redemption claims at NAV minus a spread that
 ///         names its four reasons, and collects the full amount at payout.
@@ -80,6 +81,8 @@ contract Vault is ERC4626, ERC1155Holder, Ownable, ReentrancyGuard {
     mapping(uint256 => bool) private _queued;
     mapping(uint256 => uint64) private _due;
     uint256 public deployedUsdc;
+    /// @notice Where idle USDC earns Treasury yield as USYC. Zero when unused.
+    UsycSleeve public sleeve;
 
     event ClaimSold(
         uint256 indexed claimId,
@@ -96,6 +99,7 @@ contract Vault is ERC4626, ERC1155Holder, Ownable, ReentrancyGuard {
     event ClaimSettled(uint256 indexed claimId, uint256 usdcCollected);
     event FundImpaired(address indexed fund);
     event FundRecovered(address indexed fund);
+    event SleeveSet(address indexed sleeve);
 
     error NotBuyable(Verdict verdict, string reason);
     error BelowMinPayout(uint256 payout, uint256 minPayout);
@@ -109,6 +113,8 @@ contract Vault is ERC4626, ERC1155Holder, Ownable, ReentrancyGuard {
     error IssuerStillFailed(address fund);
     error NotImpaired(address fund);
     error FundNotListed(address fund);
+    error SleeveNotEmpty();
+    error SleeveShort();
 
     constructor(
         IERC20 usdc_,
@@ -175,7 +181,7 @@ contract Vault is ERC4626, ERC1155Holder, Ownable, ReentrancyGuard {
         if (secs == 0) return _verdict(q, Verdict.REFUSE, "Claim is already due");
         if (spread >= BPS) return _verdict(q, Verdict.REFUSE, "Spread too wide");
         if (fundCost[fund] + q.payout > t.exposureCapUsdc) return _verdict(q, Verdict.REFUSE, "Over the fund cap");
-        if (idleUsdc() < q.payout) return _verdict(q, Verdict.REFUSE, "Vault short of USDC");
+        if (idleUsdc() + sleeveValue() < q.payout) return _verdict(q, Verdict.REFUSE, "Vault short of USDC");
         return _verdict(q, Verdict.BUY, "");
     }
 
@@ -229,6 +235,7 @@ contract Vault is ERC4626, ERC1155Holder, Ownable, ReentrancyGuard {
         fundCost[fund] += payout;
         deployedUsdc += payout;
 
+        _ensureIdle(payout);
         usdc.safeTransfer(receiver, payout);
         emit ClaimSold(claimId, receiver, amount, payout, q.nav, q.baseBps, q.utilBps, q.timeBps, q.creditBps);
     }
@@ -372,6 +379,52 @@ contract Vault is ERC4626, ERC1155Holder, Ownable, ReentrancyGuard {
         accRate[fund] -= p.rate;
     }
 
+    // ---------------------------------------------------------------- USYC sleeve
+
+    /// @notice Point the vault at a USYC sleeve (or zero to stop). The old
+    ///         sleeve must be empty, so no value is left behind.
+    function setSleeve(address sleeve_) external onlyOwner {
+        if (address(sleeve) != address(0)) {
+            if (sleeve.value() > 0) revert SleeveNotEmpty();
+            usdc.forceApprove(address(sleeve), 0);
+        }
+        sleeve = UsycSleeve(sleeve_);
+        if (sleeve_ != address(0)) usdc.forceApprove(sleeve_, type(uint256).max);
+        emit SleeveSet(sleeve_);
+    }
+
+    /// @notice Move idle USDC into USYC.
+    function sweepToSleeve(uint256 amount) external onlyOwner {
+        sleeve.subscribe(amount);
+    }
+
+    /// @notice Bring at least `amount` USDC back from USYC.
+    function pullFromSleeve(uint256 amount) external onlyOwner {
+        sleeve.withdrawUsdc(amount);
+    }
+
+    /// @notice USYC value the vault can draw on: zero unless the sleeve also
+    ///         points back at this vault, so a repointed sleeve is never
+    ///         counted by two vaults.
+    function sleeveValue() public view returns (uint256) {
+        return _sleeveLive() ? sleeve.value() : 0;
+    }
+
+    function _sleeveLive() private view returns (bool) {
+        return address(sleeve) != address(0) && sleeve.vault() == address(this);
+    }
+
+    /// @dev Tops idle USDC up from the sleeve when a payment needs more than is
+    ///      idle. Repeat pulls cover a redemption fee the first one missed; each
+    ///      shortfall is the fee on the last, so it shrinks to dust fast.
+    function _ensureIdle(uint256 need) private {
+        if (idleUsdc() >= need || !_sleeveLive()) return;
+        for (uint256 i; i < 4 && idleUsdc() < need; ++i) {
+            sleeve.withdrawUsdc(need - idleUsdc() + 2); // 2 units of margin for rounding on dust redemptions
+        }
+        if (idleUsdc() < need) revert SleeveShort();
+    }
+
     function idleUsdc() public view returns (uint256) {
         return usdc.balanceOf(address(this));
     }
@@ -380,7 +433,7 @@ contract Vault is ERC4626, ERC1155Holder, Ownable, ReentrancyGuard {
     ///      recoveryBps where the fund is impaired. Gains accrue over time, so
     ///      settlement leaves only NAV drift to realise.
     function totalAssets() public view override returns (uint256 total) {
-        total = idleUsdc();
+        total = idleUsdc() + sleeveValue();
         uint256 n = registry.fundCount();
         for (uint256 i; i < n; ++i) {
             address fund = registry.fundAt(i);
@@ -421,6 +474,7 @@ contract Vault is ERC4626, ERC1155Holder, Ownable, ReentrancyGuard {
         override
     {
         _foldAll();
+        _ensureIdle(assets);
         super._withdraw(caller, receiver, owner_, assets, shares);
     }
 
@@ -455,12 +509,12 @@ contract Vault is ERC4626, ERC1155Holder, Ownable, ReentrancyGuard {
 
     function maxWithdraw(address owner_) public view override returns (uint256) {
         if (_lpLock() == 2) return 0;
-        return Math.min(super.maxWithdraw(owner_), idleUsdc());
+        return Math.min(super.maxWithdraw(owner_), idleUsdc() + sleeveValue());
     }
 
     function maxRedeem(address owner_) public view override returns (uint256) {
         if (_lpLock() == 2) return 0;
-        return Math.min(super.maxRedeem(owner_), _convertToShares(idleUsdc(), Math.Rounding.Floor));
+        return Math.min(super.maxRedeem(owner_), _convertToShares(idleUsdc() + sleeveValue(), Math.Rounding.Floor));
     }
 
     /// @notice USDC per one whole share, for display.
